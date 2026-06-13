@@ -161,7 +161,9 @@
   .nav-phone span{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
   .nav-phone strong{font-size:1.05rem;color:var(--navy);font-family:"Bricolage Grotesque"}
   .burger{display:none;background:none;border:0;cursor:pointer;padding:.4rem}
-  .burger span{display:block;width:26px;height:2.5px;background:var(--navy);margin:5px 0;border-radius:2px;transition:.3s}
+  .burger .bars span{display:block;width:26px;height:2.5px;background:var(--navy);margin:5px 0;border-radius:2px;transition:.3s}
+  .burger .menu-label{display:none}
+  .mobile-soma{display:none}
 
   /* ---------- Hero ---------- */
   .hero{
@@ -349,8 +351,8 @@
 
   /* ---------- Responsive ---------- */
   @media(max-width:980px){
-    .hero-grid{grid-template-columns:1fr;gap:2.4rem}
-    .appliance{order:-1;width:min(280px,70%)}
+    .hero-grid{grid-template-columns:1fr;gap:1.6rem}
+    .appliance{order:2;width:min(230px,58%);margin:0 auto}
     .float-chip.a{left:0}.float-chip.b{right:0}
     .cards,.why-grid,.steps{grid-template-columns:repeat(2,1fr)}
     .regions-grid,.about,.contact-grid,.camp-box{grid-template-columns:1fr}
@@ -360,7 +362,13 @@
   @media(max-width:680px){
     .nav-links{display:none}
     .nav-phone{display:none}
-    .burger{display:block}
+    .nav-cta .btn-red{display:none}
+    .mobile-soma{display:inline-flex;align-items:center;gap:.35rem;font-weight:700;color:var(--red);border:2px solid rgba(225,37,27,.35);border-radius:100px;padding:.45rem .85rem;font-size:.9rem}
+    .mobile-soma svg{width:15px;height:15px}
+    .burger{display:flex;align-items:center;gap:.45rem}
+    .burger .menu-label{display:block;font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em}
+    .hero{padding:2.1rem 0 2.6rem}
+    .hero h1{font-size:clamp(2.1rem,9vw,2.7rem)}
     .nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:var(--cream);padding:1.2rem 6%;gap:1rem;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
     .statbar .wrap{grid-template-columns:1fr 1fr;gap:1.2rem}
     .cards,.why-grid,.steps{grid-template-columns:1fr}
@@ -470,8 +478,12 @@
         <span>Ücretsiz Keşif</span>
         <strong>0545 887 07 69</strong>
       </a>
+      <a href="soma.html" class="mobile-soma" aria-label="Soma doğalgaz sayfası">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg>
+        Soma
+      </a>
       <a href="https://wa.me/905458870769?text=Merhaba%2C%20do%C4%9Falgaz%20i%C3%A7in%20%C3%BCcretsiz%20ke%C5%9Fif%20talep%20etmek%20istiyorum." class="btn btn-red" target="_blank" rel="noopener">Teklif Al</a>
-      <button class="burger" id="burger" aria-label="Menü"><span></span><span></span><span></span></button>
+      <button class="burger" id="burger" aria-label="Menüyü aç"><span class="menu-label">Menü</span><span class="bars"><span></span><span></span><span></span></span></button>
     </div>
   </div>
 </header>
@@ -501,7 +513,7 @@
     </div>
 
     <div class="appliance">
-      <img class="appliance-img" src="images/kombi-montaj-buderus.jpeg" alt="Buderus kombi montajı - Kent Doğalgaz Mühendislik, Salihli ve Soma doğalgaz tesisat" loading="eager">
+      <img class="appliance-img" src="images/kombi-montaj-buderus.jpeg" alt="Buderus kombi montajı - Kent Doğalgaz Mühendislik, Salihli ve Soma doğalgaz tesisat" loading="eager" decoding="async">
       <div class="float-chip a">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 7v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-5Z"/></svg>
         Güvenli &amp; Sertifikalı
@@ -886,13 +898,13 @@
      Yeni proje eklemek için yeni bir satır ekleyebilirsiniz.
      ========================================================= */
   const PROJELER = [
-    { img: "images/kombi-montaj.jpeg", baslik: "Kombi Montajı",     yer: "Salihli" },
-    { img: "images/kazan-1.jpeg",      baslik: "Kazan Dairesi",      yer: "Soma" },
-    { img: "images/kazan-2.jpeg",      baslik: "Kazan Tesisatı",     yer: "Alaşehir" },
-    { img: "images/kazan-3.jpeg",      baslik: "Kazan Montajı",      yer: "Salihli" },
-    { img: "images/radyator.jpeg",     baslik: "Radyatör / Petek",   yer: "Salihli" },
-    { img: "images/yerden-1.jpeg",     baslik: "Yerden Isıtma",      yer: "Soma" },
-    { img: "images/yerden-2.jpeg",     baslik: "Yerden Isıtma Tesisatı", yer: "Soma" }
+    { img: "images/kombi-montaj.jpeg", baslik: "Kombi Montajı",     yer: "" },
+    { img: "images/kazan-1.jpeg",      baslik: "Kazan Dairesi",      yer: "" },
+    { img: "images/kazan-2.jpeg",      baslik: "Kazan Tesisatı",     yer: "" },
+    { img: "images/kazan-3.jpeg",      baslik: "Kazan Montajı",      yer: "" },
+    { img: "images/radyator.jpeg",     baslik: "Radyatör / Petek",   yer: "" },
+    { img: "images/yerden-1.jpeg",     baslik: "Yerden Isıtma",      yer: "" },
+    { img: "images/yerden-2.jpeg",     baslik: "Yerden Isıtma Tesisatı", yer: "" }
   ];
   const track = document.getElementById('carTrack');
   if (track) {
