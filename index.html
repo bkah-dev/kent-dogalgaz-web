@@ -147,6 +147,8 @@
   header.scrolled{border-color:var(--line);box-shadow:0 6px 20px -16px rgba(0,0,0,.4)}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;gap:1rem}
   .logo{display:flex;flex-direction:column;line-height:.9;user-select:none}
+  .logo-img{height:54px;width:auto;display:block}
+  @media(max-width:680px){.logo-img{height:44px}}
   .logo .l1{font-family:"Bricolage Grotesque";font-weight:800;font-size:1.5rem;color:var(--red);font-style:italic;letter-spacing:-.03em}
   .logo .bar{height:3px;background:var(--navy);width:100%;margin:2px 0;border-radius:2px}
   .logo .l2{font-family:"Bricolage Grotesque";font-weight:800;font-size:.92rem;color:var(--navy);letter-spacing:.02em}
@@ -186,26 +188,13 @@
 
   /* combi card */
   .appliance{
-    position:relative;justify-self:center;width:min(330px,82%);
-    aspect-ratio:3/4.1;border-radius:26px;
-    background:linear-gradient(155deg,#fff 0%,#eef1f8 100%);
-    box-shadow:0 40px 80px -30px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.9);
-    padding:1.4rem;display:flex;flex-direction:column;
-    border:1px solid rgba(255,255,255,.6);
+    position:relative;justify-self:center;width:min(340px,84%);
   }
-  .appliance .brand{font-family:"Bricolage Grotesque";font-weight:800;color:var(--navy);font-size:1.1rem;letter-spacing:.02em}
-  .appliance .screen{
-    margin:1rem 0 0;background:var(--navy-800);border-radius:14px;flex:1;
-    display:flex;flex-direction:column;justify-content:space-between;padding:1.1rem;color:#fff;position:relative;overflow:hidden;
+  .appliance-img{
+    width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:26px;display:block;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.6);
+    border:5px solid rgba(255,255,255,.85);
   }
-  .appliance .screen::after{content:"";position:absolute;bottom:-40px;right:-30px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,var(--flame),transparent 65%);opacity:.6}
-  .appliance .temp{font-family:"Bricolage Grotesque";font-size:2.6rem;font-weight:800;position:relative;z-index:1}
-  .appliance .temp small{font-size:1rem;opacity:.7}
-  .appliance .flame-ico{width:30px;height:30px;color:var(--flame);position:relative;z-index:1}
-  .appliance .row{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:1}
-  .appliance .status{font-size:.72rem;color:var(--flame-soft);font-weight:600;letter-spacing:.05em}
-  .appliance .pipes{display:flex;justify-content:space-around;margin-top:.9rem}
-  .appliance .pipes i{width:10px;height:26px;background:linear-gradient(#cfd4e0,#9aa1b5);border-radius:4px;display:block}
   .float-chip{
     position:absolute;background:#fff;color:var(--navy);border-radius:14px;
     padding:.6rem .9rem;font-size:.8rem;font-weight:700;box-shadow:var(--shadow);
@@ -459,10 +448,7 @@
 <header id="top">
   <div class="wrap nav">
     <a href="#top" class="logo" aria-label="Kent Doğalgaz Mühendislik">
-      <span class="l1">Kent</span>
-      <span class="bar"></span>
-      <span class="l2">DOĞALGAZ</span>
-      <span class="l3">MÜHENDİSLİK</span>
+      <img class="logo-img" src="images/kent-logo.png" alt="Kent Doğalgaz Mühendislik logo">
     </a>
     <nav class="nav-links" id="navLinks">
       <a href="#hizmetler">Hizmetler</a>
@@ -500,22 +486,14 @@
         </a>
       </div>
       <div class="hero-tags">
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Bosch &amp; Viessmann uygulaması</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Bosch &amp; Buderus uygulaması</span>
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Lisanslı doğalgaz projesi</span>
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Ücretsiz keşif</span>
       </div>
     </div>
 
     <div class="appliance">
-      <div class="brand">BOSCH</div>
-      <div class="screen">
-        <div class="row">
-          <svg class="flame-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .3-2 .8-2.8C8 9 8.5 10 9.5 10c0-3 2.5-4.5 2.5-8Z"/><path d="M12 22a6 6 0 0 0 6-6c0-2-1-3.5-2-4.5.2 2-1 3-2 3.5.3-2-1-4-2-5-.5 2-2 3-2.5 4.5A6 6 0 0 0 12 22Z" opacity=".55"/></svg>
-          <div class="status">● ÇALIŞIYOR</div>
-        </div>
-        <div class="temp">50<small>°C</small></div>
-      </div>
-      <div class="pipes"><i></i><i></i><i></i><i></i></div>
+      <img class="appliance-img" src="images/kombi-montaj-buderus.jpeg" alt="Buderus kombi montajı - Kent Doğalgaz Mühendislik, Salihli ve Soma doğalgaz tesisat" loading="eager">
       <div class="float-chip a">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 7v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-5Z"/></svg>
         Güvenli &amp; Sertifikalı
@@ -545,7 +523,7 @@
     </div>
     <div class="stat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 7v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-5Z"/></svg>
-      <div><strong>Yetkili Marka</strong><span>Bosch &amp; Viessmann</span></div>
+      <div><strong>Yetkili Marka</strong><span>Bosch &amp; Buderus</span></div>
     </div>
   </div>
 </section>
@@ -567,7 +545,7 @@
       <article class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="14" rx="2"/><path d="M9 21h6M12 17v4M9 7h6M9 11h4"/></svg></div>
         <h3>Kombi &amp; Kazan Montajı</h3>
-        <p>Bosch ve Viessmann başta olmak üzere kombi, yoğuşmalı kazan kurulumu ve verimli sistem seçimi.</p>
+        <p>Bosch ve Buderus başta olmak üzere kombi, yoğuşmalı kazan kurulumu ve verimli sistem seçimi.</p>
       </article>
       <article class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 5v14M12 5v14M16 5v14"/></svg></div>
@@ -900,21 +878,22 @@
      Yeni proje eklemek için yeni bir satır ekleyebilirsiniz.
      ========================================================= */
   const PROJELER = [
-    { img: "", baslik: "Kombi Montajı",        yer: "Salihli" },
-    { img: "", baslik: "Doğalgaz İç Tesisat",  yer: "Salihli" },
-    { img: "", baslik: "Kazan Dairesi",        yer: "Soma" },
-    { img: "", baslik: "Yerden Isıtma",        yer: "Salihli" },
-    { img: "", baslik: "Radyatör / Petek",     yer: "Soma" },
-    { img: "", baslik: "Tesisat Projesi",      yer: "Salihli" }
+    { img: "images/kombi-montaj.jpeg", baslik: "Kombi Montajı",     yer: "" },
+    { img: "images/kazan-1.jpeg",      baslik: "Kazan Dairesi",      yer: "" },
+    { img: "images/kazan-2.jpeg",      baslik: "Kazan Tesisatı",     yer: "" },
+    { img: "images/kazan-3.jpeg",      baslik: "Kazan Montajı",      yer: "" },
+    { img: "images/radyator.jpeg",     baslik: "Radyatör / Petek",   yer: "" },
+    { img: "images/yerden-1.jpeg",     baslik: "Yerden Isıtma",      yer: "" },
+    { img: "images/yerden-2.jpeg",     baslik: "Yerden Isıtma Tesisatı", yer: "" }
   ];
   const track = document.getElementById('carTrack');
   if (track) {
     track.innerHTML = PROJELER.map(p => `
       <figure class="slide">
         ${p.img
-          ? `<img src="${p.img}" alt="Kent Doğalgaz ${p.baslik} - ${p.yer} doğalgaz" loading="lazy">`
+          ? `<img src="${p.img}" alt="Kent Doğalgaz ${p.baslik}${p.yer ? ' - ' + p.yer : ''} - doğalgaz tesisat" loading="lazy">`
           : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>Fotoğraf eklenecek</span></div>`}
-        <figcaption class="cap">${p.baslik}<small>${p.yer}</small></figcaption>
+        <figcaption class="cap">${p.baslik}${p.yer ? `<small>${p.yer}</small>` : ''}</figcaption>
       </figure>`).join('');
     const step = () => (track.querySelector('.slide')?.offsetWidth || 300) + 19;
     document.getElementById('carPrev').addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
