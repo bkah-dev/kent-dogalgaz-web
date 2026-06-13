@@ -283,12 +283,12 @@
     border:1px solid var(--line);border-radius:24px;overflow:hidden;
     display:grid;grid-template-columns:1fr 1.2fr;box-shadow:var(--shadow)
   }
-  .camp-left{background:linear-gradient(160deg,var(--red),var(--red-600));color:#fff;padding:2.4rem;display:flex;flex-direction:column;justify-content:center}
+  .camp-left{background:linear-gradient(160deg,var(--red),var(--red-600));color:#fff;padding:2.4rem;display:flex;flex-direction:column;justify-content:center;min-width:0}
   .camp-left .badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.2);border-radius:100px;padding:.4rem .9rem;font-size:.78rem;font-weight:700;letter-spacing:.06em;width:fit-content;margin-bottom:1rem}
   .camp-left h3{font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:.6rem}
   .camp-left p{color:#ffe1de;font-size:.95rem}
   .camp-left .date{margin-top:1.2rem;font-weight:700;background:#fff;color:var(--red);border-radius:10px;padding:.55rem .9rem;width:fit-content;font-size:.9rem}
-  .camp-right{padding:2.2rem}
+  .camp-right{padding:2.2rem;min-width:0}
   .camp-tier{display:flex;gap:1rem;margin-bottom:1.2rem}
   .camp-tier .t{flex:1;border:1px solid var(--line);border-radius:14px;padding:1.1rem;text-align:center;background:#fff}
   .camp-tier .t .amt{font-family:"Bricolage Grotesque";font-size:1.9rem;color:var(--navy);line-height:1}
@@ -364,6 +364,13 @@
     .statbar .wrap{grid-template-columns:1fr 1fr;gap:1.2rem}
     .cards,.why-grid,.steps{grid-template-columns:1fr}
     .camp-tier{flex-direction:column}
+    .camp-left{padding:1.6rem}
+    .camp-right{padding:1.5rem}
+    .camp-left h3{font-size:1.4rem;overflow-wrap:break-word}
+    .camp-left .badge{white-space:normal}
+    .camp-left p,.camp-left .date{font-size:.88rem}
+    .camp-steps li{font-size:.86rem;overflow-wrap:anywhere}
+    .camp-tier .t .amt{font-size:1.7rem}
     .foot-grid{grid-template-columns:1fr}
     .wa-float{bottom:78px}
     .mobile-bar{
