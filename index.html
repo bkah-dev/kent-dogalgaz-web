@@ -53,6 +53,28 @@
 }
 </script>
 
+<!-- JSON-LD: Soma şubesi -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HVACBusiness",
+  "name": "Kent Doğalgaz Mühendislik – Soma",
+  "description": "Soma'da doğalgaz iç tesisat projesi, kombi montajı, abonelik desteği ve ücretsiz keşif.",
+  "telephone": "+90-545-887-07-69",
+  "url": "https://kentmekanikdogalgaz.com/soma",
+  "branchOf": { "@type": "HVACBusiness", "name": "Kent Doğalgaz Mühendislik" },
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Namazgah Mah. Melis Sok. No:2A-9",
+    "addressLocality": "Soma",
+    "addressRegion": "Manisa",
+    "addressCountry": "TR"
+  },
+  "areaServed": { "@type": "City", "name": "Soma" },
+  "openingHours": "Mo-Sa 08:30-19:00"
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -190,7 +212,7 @@
     display:flex;align-items:center;gap:.5rem;z-index:3;
   }
   .float-chip svg{width:18px;height:18px;color:var(--red)}
-  .float-chip.a{top:8%;left:-12%;animation:floaty 5s ease-in-out infinite}
+  .float-chip.a{top:34%;left:-13%;animation:floaty 5s ease-in-out infinite}
   .float-chip.b{bottom:14%;right:-10%;animation:floaty 6s ease-in-out infinite .8s}
   @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
@@ -386,6 +408,49 @@
   .modal-date b{color:var(--red)}
   .modal .btn{width:100%;justify-content:center}
   .modal-fine{text-align:center;font-size:.68rem;color:var(--muted);margin-top:.8rem;line-height:1.4}
+  /* ---------- Proje Galerisi (carousel) ---------- */
+  .gallery{background:var(--paper)}
+  .gallery-wrap{position:relative}
+  .car-track{display:flex;gap:1.2rem;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:.4rem 0 1rem;scrollbar-width:none;-ms-overflow-style:none}
+  .car-track::-webkit-scrollbar{display:none}
+  .slide{flex:0 0 calc(33.333% - .8rem);scroll-snap-align:start;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:var(--cream);box-shadow:var(--shadow-sm);position:relative}
+  .slide img{width:100%;height:270px;object-fit:cover;display:block}
+  .slide .ph{height:270px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;background:linear-gradient(150deg,#eef1f8,#dfe5f3);color:var(--navy)}
+  .slide .ph svg{width:46px;height:46px;opacity:.45}
+  .slide .ph span{font-weight:700;opacity:.6;font-size:.9rem}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(16,26,71,.88));color:#fff;padding:1.6rem .95rem .85rem;font-weight:700;font-size:.98rem;display:flex;justify-content:space-between;align-items:flex-end;gap:.5rem}
+  .slide .cap small{font-weight:700;font-size:.72rem;background:var(--red);padding:.18rem .5rem;border-radius:6px;white-space:nowrap}
+  .car-btn{position:absolute;top:calc(50% - 28px);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;display:grid;place-items:center;color:var(--navy);z-index:5;transition:.2s}
+  .car-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .car-btn svg{width:22px;height:22px}
+  .car-btn.prev{left:-15px}.car-btn.next{right:-15px}
+
+  /* ---------- Lokasyonlar (2 merkez) ---------- */
+  .loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+  .loc-card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--shadow-sm);transition:.25s;display:flex;flex-direction:column}
+  .loc-card:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+  .loc-head{padding:1.6rem 1.6rem 1.3rem}
+  .loc-flag{display:inline-block;background:var(--red);color:#fff;font-size:.7rem;font-weight:700;letter-spacing:.1em;padding:.35rem .85rem;border-radius:100px;margin-bottom:.9rem}
+  .loc-card h3{color:var(--navy);font-size:1.5rem;margin-bottom:.5rem}
+  .loc-addr{color:var(--muted);font-size:.95rem;margin-bottom:1.2rem;line-height:1.45}
+  .loc-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+  .loc-actions .btn{font-size:.86rem;padding:.6rem 1rem}
+  .loc-map{height:200px;border-top:1px solid var(--line)}
+  .loc-map iframe{width:100%;height:100%;border:0;filter:grayscale(.15)}
+  .service-area{margin-top:2.2rem;text-align:center}
+  .service-area .lbl{display:block;color:var(--muted);font-size:.92rem;margin-bottom:.85rem;font-weight:600}
+  .service-area .chips{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+  .service-area .chip{background:var(--cream);border:1px solid var(--line);border-radius:100px;padding:.5rem 1rem;font-weight:600;font-size:.92rem;display:inline-flex;align-items:center;gap:.4rem}
+  .service-area .chip svg{width:15px;height:15px;color:var(--red)}
+
+  @media(max-width:980px){
+    .slide{flex:0 0 calc(50% - .6rem)}
+    .loc-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:680px){
+    .slide{flex:0 0 86%}
+    .car-btn{display:none}
+  }
 </style>
 </head>
 <body>
@@ -468,7 +533,7 @@
   <div class="wrap">
     <div class="stat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg>
-      <div><strong>6 İlçe</strong><span>Salihli, Soma &amp; çevresi</span></div>
+      <div><strong>2 Merkez</strong><span>Salihli &amp; Soma dükkan</span></div>
     </div>
     <div class="stat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -562,29 +627,68 @@
   </div>
 </section>
 
-<!-- ============ BÖLGELER ============ -->
+<!-- ============ PROJE GALERİSİ ============ -->
+<section class="sec gallery" id="projeler">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="eyebrow">Projelerimiz</span>
+      <h2>Tamamladığımız işlerden kareler</h2>
+      <p>Salihli ve Soma'da gerçekleştirdiğimiz doğalgaz tesisat ve kombi montajı projelerinden bir seçki.</p>
+    </div>
+    <div class="gallery-wrap reveal">
+      <button class="car-btn prev" id="carPrev" aria-label="Önceki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="car-track" id="carTrack"></div>
+      <button class="car-btn next" id="carNext" aria-label="Sonraki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOKASYONLAR ============ -->
 <section class="sec" id="bolgeler">
-  <div class="wrap regions-grid">
-    <div class="reveal">
-      <span class="eyebrow">Hizmet Bölgemiz</span>
-      <h2 style="color:var(--navy);font-size:clamp(1.9rem,3.6vw,2.9rem);margin:.7rem 0 .7rem">Salihli'den Soma'ya bölgenizdeyiz</h2>
-      <p style="color:var(--muted)">Merkez ofisimiz Salihli'de; deneyimimizi ve mühendislik kalitemizi artık Soma ve çevre ilçelere de taşıyoruz.</p>
-      <div class="region-list">
-        <span class="chip main"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Salihli Merkez</span>
-        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Soma</span>
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="eyebrow">Lokasyonlarımız</span>
+      <h2>İki merkez, tek güvence</h2>
+      <p>Hem Salihli'de hem Soma'da kendi dükkanımızla hizmetinizdeyiz; çevre ilçelere de gidiyoruz.</p>
+    </div>
+    <div class="loc-grid">
+      <div class="loc-card reveal">
+        <div class="loc-head">
+          <span class="loc-flag">SALİHLİ MERKEZ</span>
+          <h3>Salihli</h3>
+          <p class="loc-addr">Cumhuriyet Mah. Atatürk Cad. No:180/B<br>(Ayfırın karşısı) · 45700 Salihli/Manisa</p>
+          <div class="loc-actions">
+            <a href="https://www.google.com/maps?q=Atat%C3%BCrk%20Caddesi%20No%20180%2FB%2045700%20Salihli%20Manisa" class="btn btn-ghost" target="_blank" rel="noopener">Yol Tarifi</a>
+            <a href="tel:+905458870769" class="btn btn-red">Ara</a>
+          </div>
+        </div>
+        <div class="loc-map"><iframe title="Salihli Merkez harita" src="https://www.google.com/maps?q=Atat%C3%BCrk%20Caddesi%20No%20180%2FB%2045700%20Salihli%20Manisa&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+      </div>
+      <div class="loc-card reveal">
+        <div class="loc-head">
+          <span class="loc-flag">SOMA MERKEZ</span>
+          <h3>Soma</h3>
+          <p class="loc-addr">Namazgah Mah. Melis Sok. No:2A-9<br>Soma/Manisa</p>
+          <div class="loc-actions">
+            <a href="https://www.google.com/maps?q=Namazgah%20Mahallesi%20Melis%20Sokak%20Soma%20Manisa" class="btn btn-ghost" target="_blank" rel="noopener">Yol Tarifi</a>
+            <a href="soma.html" class="btn btn-red">Soma Sayfası →</a>
+          </div>
+        </div>
+        <div class="loc-map"><iframe title="Soma Merkez harita" src="https://www.google.com/maps?q=Namazgah%20Mahallesi%20Melis%20Sokak%20Soma%20Manisa&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+      </div>
+    </div>
+    <div class="service-area reveal">
+      <span class="lbl">Ayrıca hizmet verdiğimiz ilçeler:</span>
+      <div class="chips">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Alaşehir</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Ahmetli</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Kula</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg> Kırkağaç</span>
       </div>
     </div>
-    <div class="region-card reveal">
-      <div class="big">Soma'da <span class="accent">yeni dönem</span></div>
-      <p>Soma'da doğalgaz yeni yeni evlere giriyor. İlk hareket eden, en doğru projeyle kazanır. Kent Doğalgaz olarak Soma'daki dönüşümde komşularımızın yanındayız — keşiften devreye almaya kadar tüm süreci sizin için yönetiyoruz.</p>
-      <a href="soma.html" class="btn btn-light" style="margin-top:1.4rem;position:relative;z-index:1">Soma doğalgaz sayfası →</a>
-    </div>
   </div>
 </section>
+
 
 <!-- ============ SÜREÇ ============ -->
 <section class="sec why" id="surec" style="background:linear-gradient(165deg,#1a285f,#101a47)">
@@ -669,7 +773,11 @@
         </div>
         <div class="ci">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg></div>
-          <div><span>Adres</span><a href="https://share.google/61RQyYrKbiMzsLRSv" target="_blank" rel="noopener"><strong style="font-size:1rem;line-height:1.35;display:block">Cumhuriyet Mah. Atatürk Cad. No:180/B<br>Ayfırın karşısı · 45700 Salihli/Manisa</strong></a></div>
+          <div><span>Salihli Merkez</span><strong style="font-size:1rem;line-height:1.35;display:block">Cumhuriyet Mah. Atatürk Cad. No:180/B · Salihli/Manisa</strong></div>
+        </div>
+        <div class="ci">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg></div>
+          <div><span>Soma Merkez</span><strong style="font-size:1rem;line-height:1.35;display:block">Namazgah Mah. Melis Sok. No:2A-9 · Soma/Manisa</strong></div>
         </div>
         <div class="ci">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
@@ -704,23 +812,23 @@
       <div>
         <h4>Hızlı Bağlantılar</h4>
         <a href="#hizmetler">Hizmetler</a>
-        <a href="#neden">Neden Doğalgaz</a>
+        <a href="#projeler">Projelerimiz</a>
         <a href="soma.html">Soma Doğalgaz</a>
         <a href="#surec">Nasıl Çalışır</a>
         <a href="#iletisim">İletişim</a>
       </div>
       <div>
-        <h4>Hizmet Bölgeleri</h4>
-        <a href="#iletisim">Salihli · Soma</a>
-        <a href="#iletisim">Alaşehir · Ahmetli</a>
-        <a href="#iletisim">Kula · Kırkağaç</a>
+        <h4>Lokasyonlar</h4>
+        <a href="#bolgeler">Salihli Merkez</a>
+        <a href="#bolgeler">Soma Merkez</a>
+        <a href="#bolgeler">Alaşehir · Ahmetli · Kula · Kırkağaç</a>
         <h4 style="margin-top:1.2rem">İletişim</h4>
         <a href="tel:+905458870769">0545 887 07 69</a>
       </div>
     </div>
     <div class="foot-bottom">
       <span>© <span id="year"></span> Kent Doğalgaz Mühendislik · Tüm hakları saklıdır.</span>
-      <span>Salihli, Manisa · Makina Mühendisi Osman Açıkgöz</span>
+      <span>Salihli &amp; Soma · Makina Mühendisi Osman Açıkgöz</span>
     </div>
   </div>
 </footer>
@@ -781,6 +889,37 @@
   document.getElementById('modalCta').addEventListener('click', closeModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* =========================================================
+     PROJE GALERİSİ — FOTOĞRAF EKLEMEK İÇİN BURAYI DÜZENLEYİN
+     1) Fotoğrafları repodaki "images" klasörüne yükleyin
+        (ör. images/proje1.jpg)
+     2) Aşağıdaki listede ilgili satırın img kısmına dosya
+        yolunu yazın:  img: "images/proje1.jpg"
+     3) baslik = işin adı, yer = Salihli / Soma
+     Yeni proje eklemek için yeni bir satır ekleyebilirsiniz.
+     ========================================================= */
+  const PROJELER = [
+    { img: "", baslik: "Kombi Montajı",        yer: "Salihli" },
+    { img: "", baslik: "Doğalgaz İç Tesisat",  yer: "Salihli" },
+    { img: "", baslik: "Kazan Dairesi",        yer: "Soma" },
+    { img: "", baslik: "Yerden Isıtma",        yer: "Salihli" },
+    { img: "", baslik: "Radyatör / Petek",     yer: "Soma" },
+    { img: "", baslik: "Tesisat Projesi",      yer: "Salihli" }
+  ];
+  const track = document.getElementById('carTrack');
+  if (track) {
+    track.innerHTML = PROJELER.map(p => `
+      <figure class="slide">
+        ${p.img
+          ? `<img src="${p.img}" alt="Kent Doğalgaz ${p.baslik} - ${p.yer} doğalgaz" loading="lazy">`
+          : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><span>Fotoğraf eklenecek</span></div>`}
+        <figcaption class="cap">${p.baslik}<small>${p.yer}</small></figcaption>
+      </figure>`).join('');
+    const step = () => (track.querySelector('.slide')?.offsetWidth || 300) + 19;
+    document.getElementById('carPrev').addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    document.getElementById('carNext').addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }));
+  }
 </script>
 </body>
 </html>
