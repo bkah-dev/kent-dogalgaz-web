@@ -105,7 +105,8 @@
   .nav-phone span{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
   .nav-phone strong{font-size:1.05rem;color:var(--navy);font-family:"Bricolage Grotesque"}
   .burger{display:none;background:none;border:0;cursor:pointer;padding:.4rem}
-  .burger span{display:block;width:26px;height:2.5px;background:var(--navy);margin:5px 0;border-radius:2px}
+  .burger .bars span{display:block;width:26px;height:2.5px;background:var(--navy);margin:5px 0;border-radius:2px}
+  .burger .menu-label{display:none}
 
   .hero{background:radial-gradient(800px 460px at 88% 92%,rgba(255,138,61,.30),transparent 60%),radial-gradient(600px 400px at 10% -10%,rgba(225,37,27,.22),transparent 55%),linear-gradient(160deg,var(--navy),var(--navy-800));color:#fff;position:relative;overflow:hidden;padding:clamp(3rem,7vw,5.5rem) 0 clamp(3.5rem,7vw,6rem)}
   .hero::before{content:"";position:absolute;inset:0;opacity:.5;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:46px 46px;mask:radial-gradient(900px 600px at 70% 50%,#000,transparent 80%)}
@@ -187,7 +188,8 @@
   }
   @media(max-width:680px){
     .nav-links,.nav-phone{display:none}
-    .burger{display:block}
+    .burger{display:flex;align-items:center;gap:.45rem}
+    .burger .menu-label{display:block;font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em}
     .nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:var(--cream);padding:1.2rem 6%;gap:1rem;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
     .cards,.steps{grid-template-columns:1fr}
   }
@@ -210,7 +212,7 @@
     <div class="nav-cta">
       <a href="tel:+905458870769" class="nav-phone"><span>Ücretsiz Keşif</span><strong>0545 887 07 69</strong></a>
       <a href="https://wa.me/905458870769?text=Merhaba%2C%20Soma'da%20do%C4%9Falgaz%20i%C3%A7in%20%C3%BCcretsiz%20ke%C5%9Fif%20istiyorum." class="btn btn-red" target="_blank" rel="noopener">Teklif Al</a>
-      <button class="burger" id="burger" aria-label="Menü"><span></span><span></span><span></span></button>
+      <button class="burger" id="burger" aria-label="Menüyü aç"><span class="menu-label">Menü</span><span class="bars"><span></span><span></span><span></span></span></button>
     </div>
   </div>
 </header>
