@@ -295,7 +295,8 @@
   .camp-tier .t .amt small{font-size:.85rem}
   .camp-tier .t .cond{font-size:.78rem;color:var(--muted);margin-top:.3rem}
   .camp-steps{list-style:none;display:flex;flex-direction:column;gap:.6rem}
-  .camp-steps li{display:flex;gap:.6rem;font-size:.9rem;color:var(--ink)}
+  .camp-steps li{display:flex;gap:.6rem;font-size:.9rem;color:var(--ink);align-items:flex-start}
+  .camp-steps li span{min-width:0;overflow-wrap:break-word}
   .camp-steps svg{width:18px;height:18px;color:var(--red);flex-shrink:0;margin-top:3px}
   .camp-note{font-size:.74rem;color:var(--muted);margin-top:1.1rem;line-height:1.4}
 
@@ -369,7 +370,7 @@
     .camp-left h3{font-size:1.4rem;overflow-wrap:break-word}
     .camp-left .badge{white-space:normal}
     .camp-left p,.camp-left .date{font-size:.88rem}
-    .camp-steps li{font-size:.86rem;overflow-wrap:anywhere}
+    .camp-steps li{font-size:.86rem}
     .camp-tier .t .amt{font-size:1.7rem}
     .foot-grid{grid-template-columns:1fr}
     .wa-float{bottom:78px}
@@ -714,9 +715,9 @@
           </div>
         </div>
         <ul class="camp-steps">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Ziraat Bankası Bankkart ile <b>tek seferde, 8 taksitli</b> alışverişlerde geçerli.</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Kart çekiminden önce <b>VIESSMANN</b> yazıp <b>4757</b>'ye SMS gönderin, onay almayı unutmayın.</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg> Kampanya Ziraat Bankası bireysel kredi kartları için geçerlidir.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><span>Ziraat Bankası Bankkart ile <b>tek seferde, 8 taksitli</b> alışverişlerde geçerli.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><span>Kart çekiminden önce <b>VIESSMANN</b> yazıp <b>4757</b>'ye SMS gönderin, onay almayı unutmayın.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><span>Kampanya Ziraat Bankası bireysel kredi kartları için geçerlidir.</span></li>
         </ul>
         <p class="camp-note">Başkart, Business Kart ve ücretsiz Bankkartlar kampanyaya dahil değildir. Kampanya koşulları Ziraat Bankası tarafından belirlenir ve süreli olabilir. Güncel detaylar için bizimle iletişime geçin.</p>
       </div>
@@ -885,13 +886,13 @@
      Yeni proje eklemek için yeni bir satır ekleyebilirsiniz.
      ========================================================= */
   const PROJELER = [
-    { img: "images/kombi-montaj.jpeg", baslik: "Kombi Montajı",     yer: "" },
-    { img: "images/kazan-1.jpeg",      baslik: "Kazan Dairesi",      yer: "" },
-    { img: "images/kazan-2.jpeg",      baslik: "Kazan Tesisatı",     yer: "" },
-    { img: "images/kazan-3.jpeg",      baslik: "Kazan Montajı",      yer: "" },
-    { img: "images/radyator.jpeg",     baslik: "Radyatör / Petek",   yer: "" },
-    { img: "images/yerden-1.jpeg",     baslik: "Yerden Isıtma",      yer: "" },
-    { img: "images/yerden-2.jpeg",     baslik: "Yerden Isıtma Tesisatı", yer: "" }
+    { img: "images/kombi-montaj.jpeg", baslik: "Kombi Montajı",     yer: "Salihli" },
+    { img: "images/kazan-1.jpeg",      baslik: "Kazan Dairesi",      yer: "Soma" },
+    { img: "images/kazan-2.jpeg",      baslik: "Kazan Tesisatı",     yer: "Alaşehir" },
+    { img: "images/kazan-3.jpeg",      baslik: "Kazan Montajı",      yer: "Salihli" },
+    { img: "images/radyator.jpeg",     baslik: "Radyatör / Petek",   yer: "Salihli" },
+    { img: "images/yerden-1.jpeg",     baslik: "Yerden Isıtma",      yer: "Soma" },
+    { img: "images/yerden-2.jpeg",     baslik: "Yerden Isıtma Tesisatı", yer: "Soma" }
   ];
   const track = document.getElementById('carTrack');
   if (track) {
