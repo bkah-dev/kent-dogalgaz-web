@@ -53,7 +53,7 @@
     { "@type": "Question", "name": "Soma'da doğalgaz abonelik ücretleri ne kadar?",
       "acceptedAnswer": { "@type": "Answer", "text": "Bağlantı bedeli, güvence bedeli ve kontrol-onay bedeli gibi kalemler EPDK çerçevesinde her yıl belirlenir ve dağıtım şirketine göre değişir. Size özel net tutarı ücretsiz keşifte hesaplayıp bildiririz." } },
     { "@type": "Question", "name": "Kombi mi kazan mı, hangi marka?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Evinizin büyüklüğü ve ihtiyacınıza göre öneririz. Bosch ve Viessmann başta olmak üzere verimli cihazlar uyguluyoruz; en doğru seçimi keşifte birlikte belirleriz." } }
+      "acceptedAnswer": { "@type": "Answer", "text": "Evinizin büyüklüğü ve ihtiyacınıza göre öneririz. Bosch ve Buderus başta olmak üzere verimli cihazlar uyguluyoruz; en doğru seçimi keşifte birlikte belirleriz." } }
   ]
 }
 </script>
@@ -91,6 +91,8 @@
   header.scrolled{border-color:var(--line);box-shadow:0 6px 20px -16px rgba(0,0,0,.4)}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:.8rem 0;gap:1rem}
   .logo{display:flex;flex-direction:column;line-height:.9;user-select:none}
+  .logo-img{height:54px;width:auto;display:block}
+  @media(max-width:680px){.logo-img{height:44px}}
   .logo .l1{font-family:"Bricolage Grotesque";font-weight:800;font-size:1.5rem;color:var(--red);font-style:italic;letter-spacing:-.03em}
   .logo .bar{height:3px;background:var(--navy);width:100%;margin:2px 0;border-radius:2px}
   .logo .l2{font-family:"Bricolage Grotesque";font-weight:800;font-size:.92rem;color:var(--navy)}
@@ -196,8 +198,7 @@
 <header id="top">
   <div class="wrap nav">
     <a href="index.html" class="logo" aria-label="Kent Doğalgaz Mühendislik ana sayfa">
-      <span class="l1">Kent</span><span class="bar"></span>
-      <span class="l2">DOĞALGAZ</span><span class="l3">MÜHENDİSLİK</span>
+      <img class="logo-img" src="images/kent-logo.png" alt="Kent Doğalgaz Mühendislik logo">
     </a>
     <nav class="nav-links" id="navLinks">
       <a href="index.html">Ana Sayfa</a>
@@ -271,7 +272,7 @@
       <article class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="3" width="12" height="14" rx="2"/><path d="M9 21h6M12 17v4M9 7h6M9 11h4"/></svg></div>
         <h3>Kombi &amp; Kazan Montajı</h3>
-        <p>Bosch ve Viessmann başta olmak üzere verimli kombi ve yoğuşmalı kazan kurulumu.</p>
+        <p>Bosch ve Buderus başta olmak üzere verimli kombi ve yoğuşmalı kazan kurulumu.</p>
       </article>
       <article class="card reveal">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 5v14M12 5v14M16 5v14"/></svg></div>
@@ -336,7 +337,7 @@
         <div class="ans">Bağlantı bedeli, güvence bedeli ve kontrol-onay bedeli gibi kalemler EPDK çerçevesinde her yıl belirlenir ve dağıtım şirketine göre değişir. İç tesisat maliyeti ise dairenizin büyüklüğüne ve cihaz seçimine bağlıdır. Size özel net tutarı ücretsiz keşifte hesaplayıp yazılı veririz.</div>
       </details>
       <details class="reveal"><summary>Kombi mi kazan mı, hangi marka? <span class="plus"></span></summary>
-        <div class="ans">Evinizin büyüklüğüne ve ihtiyacınıza göre öneririz. Bosch ve Viessmann başta olmak üzere verimli, garantili cihazlar uyguluyoruz. En doğru ve en ekonomik seçimi keşifte birlikte belirleriz.</div>
+        <div class="ans">Evinizin büyüklüğüne ve ihtiyacınıza göre öneririz. Bosch ve Buderus başta olmak üzere verimli, garantili cihazlar uyguluyoruz. En doğru ve en ekonomik seçimi keşifte birlikte belirleriz.</div>
       </details>
       <details class="reveal"><summary>Soma'nın hangi mahallelerinde çalışıyorsunuz? <span class="plus"></span></summary>
         <div class="ans">Soma merkez ve tüm mahallelerinde hizmet veriyoruz. Çevre ilçelerde de (Kırkağaç ve diğer Manisa ilçeleri) doğalgaz işlerinizi üstleniyoruz. Adresinizi söyleyin, hemen planlayalım.</div>
