@@ -4,6 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
 <!-- ============ SEO ============ -->
 <title>Kent Doğalgaz Mühendislik | Salihli & Soma Doğalgaz Tesisat ve Proje</title>
 <meta name="description" content="Salihli ve Soma'da doğalgaz iç tesisat projesi, proje çizimi, kombi & kazan montajı ve ücretsiz keşif. Kent Doğalgaz Mühendislik güvencesiyle eviniz ısınsın, yüzünüz gülsün." />
@@ -363,10 +368,12 @@
     .nav-links{display:none}
     .nav-phone{display:none}
     .nav-cta .btn-red{display:none}
-    .mobile-soma{display:inline-flex;align-items:center;gap:.35rem;font-weight:700;color:var(--red);border:2px solid rgba(225,37,27,.35);border-radius:100px;padding:.45rem .85rem;font-size:.9rem}
-    .mobile-soma svg{width:15px;height:15px}
+    .nav-cta{gap:.4rem}
+    .mobile-soma{display:inline-flex;align-items:center;gap:.3rem;font-weight:700;color:var(--red);border:2px solid rgba(225,37,27,.35);border-radius:100px;padding:.4rem .68rem;font-size:.82rem;white-space:nowrap}
+    .mobile-soma.mobile-anlasma{color:var(--navy);border-color:rgba(22,35,92,.35)}
+    .mobile-soma svg{width:14px;height:14px}
     .burger{display:flex;align-items:center;gap:.45rem}
-    .burger .menu-label{display:block;font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em}
+    .burger .menu-label{display:none}
     .hero{padding:2.1rem 0 2.6rem}
     .hero h1{font-size:clamp(2.1rem,9vw,2.7rem)}
     .nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:var(--cream);padding:1.2rem 6%;gap:1rem;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
@@ -489,6 +496,7 @@
       <a href="#hizmetler">Hizmetler</a>
       <a href="#neden">Neden Doğalgaz</a>
       <a href="soma.html">Soma</a>
+      <a href="baglanti-anlasmasi.html">Bağlantı Anlaşması</a>
       <a href="#surec">Nasıl Çalışır</a>
       <a href="#iletisim">İletişim</a>
     </nav>
@@ -500,6 +508,10 @@
       <a href="soma.html" class="mobile-soma" aria-label="Soma doğalgaz sayfası">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11a8 8 0 1 0-16 0c0 6.5 8 11 8 11Z"/><circle cx="12" cy="11" r="3"/></svg>
         Soma
+      </a>
+      <a href="baglanti-anlasmasi.html" class="mobile-soma mobile-anlasma" aria-label="Doğalgaz bağlantı anlaşması sayfası">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+        Anlaşma
       </a>
       <a href="https://wa.me/905458870769?text=Merhaba%2C%20do%C4%9Falgaz%20i%C3%A7in%20%C3%BCcretsiz%20ke%C5%9Fif%20talep%20etmek%20istiyorum." class="btn btn-red" target="_blank" rel="noopener">Teklif Al</a>
       <button class="burger" id="burger" aria-label="Menüyü aç"><span class="menu-label">Menü</span><span class="bars"><span></span><span></span><span></span></span></button>
