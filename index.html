@@ -374,9 +374,13 @@
     .mobile-soma svg{width:14px;height:14px}
     .burger{display:flex;align-items:center;gap:.45rem}
     .burger .menu-label{display:none}
-    .hero{padding:2.1rem 0 1.6rem}
-    .hero-grid{gap:1.1rem}
-    .appliance{width:min(190px,52%)}
+    .hero{padding:2rem 0 1.4rem}
+    .hero-grid{grid-template-columns:1fr .82fr;gap:1rem;align-items:start}
+    .appliance{order:0;width:100%;margin:0}
+    .float-chip{display:none}
+    .hero h1{font-size:clamp(1.65rem,7vw,2.2rem)}
+    .hero p.lead{font-size:.98rem;margin-bottom:1.3rem}
+    .hero-cta{gap:.6rem;margin-bottom:1.3rem}
     .hero h1{font-size:clamp(2.1rem,9vw,2.7rem)}
     .nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:var(--cream);padding:1.2rem 6%;gap:1rem;border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
     .statbar .wrap{grid-template-columns:1fr 1fr;gap:1.4rem 1rem}
