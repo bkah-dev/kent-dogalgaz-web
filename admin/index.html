@@ -39,7 +39,7 @@
   <!-- Uygulama -->
   <main id="app" class="app" hidden>
 
-    <!-- Liste görünümü -->
+    <!-- Liste -->
     <section id="listView" class="view">
       <header class="topbar">
         <div class="topbar-brand">
@@ -64,7 +64,7 @@
       <button id="newJobButton" class="fab" type="button" aria-label="Yeni iş">＋ Yeni iş</button>
     </section>
 
-    <!-- Detay görünümü -->
+    <!-- Detay -->
     <section id="detailView" class="view" hidden>
       <header class="topbar">
         <button id="backButton" class="icon-btn" type="button" aria-label="Geri">‹</button>
@@ -78,12 +78,15 @@
       </header>
 
       <div class="detail-body">
-        <div class="contact-row">
+        <div class="contact-row three">
           <a id="callLink" class="btn btn-ghost" href="#">📞 Ara</a>
-          <a id="mapLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">📍 Yol tarifi</a>
+          <a id="waLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+          <a id="mapLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">📍 Tarif</a>
         </div>
         <p id="detailAddress" class="detail-address"></p>
         <p id="detailNote" class="detail-note"></p>
+
+        <div id="alertStrip" class="alert-strip"></div>
 
         <div id="stageCard" class="stage-card">
           <span class="stage-card-label">Şu anki aşama</span>
@@ -96,13 +99,99 @@
         <button id="nextStageButton" class="btn btn-primary btn-block btn-lg" type="button"></button>
         <button id="pickStageButton" class="btn btn-outline btn-block" type="button">Başka aşama seç</button>
 
-        <div class="block">
-          <label class="block-label" for="appointmentInput">Aksa randevusu</label>
-          <div class="row">
-            <input id="appointmentInput" type="datetime-local">
-            <button id="saveAppointmentButton" class="btn btn-outline" type="button">Kaydet</button>
+        <!-- Kontrol listesi -->
+        <details class="section" id="secChecks">
+          <summary><span>✅ Kontrol listesi</span><span id="checksSummary" class="section-meta"></span></summary>
+          <div id="checklist" class="checklist"></div>
+        </details>
+
+        <!-- Ödeme -->
+        <details class="section" id="secPay">
+          <summary><span>💰 Ödeme</span><span id="paySummary" class="section-meta"></span></summary>
+          <div class="section-body">
+            <div class="row">
+              <label class="grow">Toplam fiyat (₺)
+                <input id="priceInput" type="number" inputmode="decimal" min="0" step="1" placeholder="0">
+              </label>
+              <button id="savePriceButton" class="btn btn-outline self-end" type="button">Kaydet</button>
+            </div>
+            <div class="pay-totals">
+              <span>Ödenen: <strong id="paidTotal">0 ₺</strong></span>
+              <span>Kalan: <strong id="remainingTotal">0 ₺</strong></span>
+            </div>
+            <div class="row">
+              <input id="payAmount" type="number" inputmode="decimal" min="1" step="1" placeholder="Tutar">
+              <select id="payMethod">
+                <option>Nakit</option><option>Havale</option><option>Kart</option><option>Diğer</option>
+              </select>
+              <button id="addPaymentButton" class="btn btn-outline" type="button">Ödeme ekle</button>
+            </div>
+            <ul id="paymentList" class="plain-list"></ul>
+            <div class="row">
+              <label class="grow">Ödeme sözü tarihi
+                <input id="reminderInput" type="date">
+              </label>
+              <label class="grow">Hatırlatma notu
+                <input id="reminderNote" type="text" placeholder="örn. kalan 5.000 ₺ cuma" maxlength="200">
+              </label>
+            </div>
+            <button id="saveReminderButton" class="btn btn-outline btn-block" type="button">Hatırlatmayı kaydet</button>
           </div>
-        </div>
+        </details>
+
+        <!-- Dosyalar -->
+        <details class="section" id="secFiles">
+          <summary><span>📎 Dosyalar</span><span id="filesSummary" class="section-meta"></span></summary>
+          <div class="section-body">
+            <div id="fileKinds" class="kind-chips">
+              <button type="button" class="chip active" data-kind="sozlesme">Sözleşme</button>
+              <button type="button" class="chip" data-kind="abone_formu">Abone formu</button>
+              <button type="button" class="chip" data-kind="barkod">Kombi barkodu</button>
+              <button type="button" class="chip" data-kind="proje">Proje</button>
+              <button type="button" class="chip" data-kind="diger">Diğer</button>
+            </div>
+            <div class="row">
+              <label class="btn btn-outline grow file-btn">📷 Fotoğraf çek
+                <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+              </label>
+              <label class="btn btn-outline grow file-btn">📁 Dosya seç
+                <input id="fileInput" type="file" accept="image/*,application/pdf" hidden>
+              </label>
+            </div>
+            <p id="uploadStatus" class="hint"></p>
+            <ul id="fileList" class="plain-list"></ul>
+            <p class="hint">Fotoğraflar yüklenmeden önce otomatik küçültülür. Montaj videoları WhatsApp grubunda kalır; gönderince kontrol listesinden işaretleyin.</p>
+          </div>
+        </details>
+
+        <!-- Randevu ve plan -->
+        <details class="section" id="secDates">
+          <summary><span>📅 Plan &amp; Aksa randevusu</span><span id="datesSummary" class="section-meta"></span></summary>
+          <div class="section-body">
+            <div class="row">
+              <label class="grow">Montaj planı
+                <input id="plannedInput" type="date">
+              </label>
+              <button id="savePlannedButton" class="btn btn-outline self-end" type="button">Kaydet</button>
+            </div>
+            <div class="row">
+              <label class="grow">Aksa gaz açma randevusu
+                <input id="appointmentInput" type="datetime-local">
+              </label>
+              <button id="saveAppointmentButton" class="btn btn-outline self-end" type="button">Kaydet</button>
+            </div>
+            <div id="appointmentResult" class="row" hidden>
+              <button id="apptOpenedButton" class="btn btn-primary grow" type="button">✓ Gaz açıldı</button>
+              <button id="apptFailedButton" class="btn btn-outline grow" type="button">✗ Açılamadı</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- WhatsApp mesajları -->
+        <details class="section" id="secMsg">
+          <summary><span>💬 Müşteriye hazır mesaj</span><span class="section-meta">WhatsApp</span></summary>
+          <div id="messageButtons" class="section-body msg-grid"></div>
+        </details>
 
         <div class="block">
           <label class="block-label" for="noteInput">Not ekle</label>
@@ -125,9 +214,9 @@
     </section>
   </main>
 
-  <!-- Yeni / düzenle formu -->
   <div id="overlay" class="overlay" hidden></div>
 
+  <!-- Yeni / düzenle -->
   <form id="jobDialog" class="sheet" hidden>
     <h2 id="jobDialogTitle">Yeni iş</h2>
     <label>Müşteri adı *
@@ -172,6 +261,8 @@
     <h2>Aşamalar</h2>
     <p class="hint">İsim değiştirmek için üstüne dokunun. Pasif aşamalar seçilemez ama geçmiş kayıtlarda görünür.</p>
     <div id="stagesList" class="stages-admin"></div>
+    <h2 class="mt">Kontrol listesi</h2>
+    <div id="checkItemsList" class="stages-admin"></div>
     <div class="sheet-actions">
       <button type="button" id="stagesClose" class="btn btn-primary btn-block">Kapat</button>
     </div>

@@ -16,21 +16,30 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - Birden fazla telefonda anlık güncelleme (Realtime)
 - Ana ekrana ekleyince uygulama gibi açılır (manifest)
 
-## Aşamalar (varsayılan)
+## Aşamalar (v2, gerçek saha akışı)
 
 1. Keşif yapıldı
 2. Teklif verildi
-3. Sipariş alındı
-4. Bağlantı anlaşması yapıldı
-5. Proje çizildi
-6. Proje Aksa'ya gönderildi
+3. Sözleşme yapıldı
+4. İş planlandı
+5. Montaj yapıldı
+6. Proje Aksa'ya gönderildi (montaj videosundan çizilir)
 7. Proje onaylandı
-8. Montaj yapıldı
-9. Tesisat teslim edildi
-10. Aksa randevusu alındı
-11. Kontrol geçti / sayaç takıldı
-12. Gaz açıldı
-13. Tamamlandı (iş kapanır)
+8. Eksikler tamamlanıyor (camcı, elektrikçi, sayaç)
+9. Aksa randevusu alındı
+10. Gaz açıldı
+11. Tamamlandı (iş kapanır)
+
+## v2 ile gelenler
+
+- Kontrol listesi (sözleşme fotoğrafı, abone formu, proje PDF, montaj videosu WhatsApp'a gönderildi, kombi barkodu, servis randevusu, sayaç, camcı, elektrikçi). Admin ekler/çıkarır.
+- Ödeme: toplam fiyat, ödemeler (nakit/havale/kart), kalan, ödeme sözü tarihi + hatırlatma notu. "Kalan ödeme" filtresi.
+- Dosyalar: fotoğraf ve PDF, Supabase Storage `job-files` (özel bucket). Fotoğraf telefonda 1600 px JPEG'e küçültülür (~400 KB). Video yüklenmez, WhatsApp'ta kalır.
+- "Bugün" filtresi: Aksa randevusu bugün/geçmiş, hatırlatma günü gelmiş, montaj planı bugün.
+- Aksa randevu sonucu: "Gaz açıldı" (aşamayı ilerletir) / "Açılamadı" (sebep yazılır, randevu silinir, tekrar girilir).
+- Müşteriye hazır WhatsApp mesajları (keşif takibi, sayaç al, randevu bilgisi, kalan ödeme). wa.me bağlantısı, uygulama göndermez, WhatsApp'ta açar.
+
+Depolama: ücretsiz planda 1 GB / dosya başına 50 MB / ay 5 GB indirme. Pro (25 $/ay) 100 GB.
 
 Admin ekranından isim, sıra ve aktiflik değiştirilebilir.
 
@@ -39,7 +48,7 @@ Admin ekranından isim, sıra ve aktiflik değiştirilebilir.
 1. supabase.com'da yeni proje açın (Zühtü Bey'den ayrı). Bölge: Frankfurt.
 2. `Authentication > Sign In / Providers > Email`: "Allow new users to sign up" KAPALI olsun.
 3. `Authentication > Users > Add user` ile ilk hesabı açın. E-posta: `osman@personel.kentmekanikdogalgaz.com` gibi; "Auto Confirm User" işaretli. Bu adreslerin posta kutusu yoktur, parola sıfırlamayı admin panelden yapar.
-4. `SQL Editor`'de `supabase/migrations/20261022120000_is_takip.sql` dosyasını çalıştırın. Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
+4. `SQL Editor`'de `supabase/migrations/` altındaki dosyaları tarih sırasıyla çalıştırın (önce `..._is_takip.sql`, sonra `..._is_takip_v2.sql`). Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
 5. `Project Settings > API` altındaki Project URL ve publishable (anon) key değerlerini `admin/supabase-config.js` dosyasına yazın.
 6. Push edin; Vercel otomatik yayınlar.
 
