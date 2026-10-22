@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#16235C">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kent İş">
+  <title>Kent Doğalgaz İş Takip</title>
+  <link rel="manifest" href="/admin/manifest.webmanifest">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+
+  <!-- Giriş -->
+  <section id="authGate" class="gate">
+    <form id="loginForm" class="gate-card" autocomplete="on">
+      <img src="/images/kent-logo.png" alt="Kent Doğalgaz" class="gate-logo">
+      <h1>İş Takip</h1>
+      <p class="gate-sub">Personel girişi</p>
+      <label>Kullanıcı adı
+        <input id="loginUsername" type="text" autocomplete="username" autocapitalize="none" inputmode="email" required>
+      </label>
+      <label>Parola
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </label>
+      <p id="loginError" class="error" role="alert"></p>
+      <button id="loginButton" type="submit" class="btn btn-primary btn-block">Giriş yap</button>
+    </form>
+  </section>
+
+  <!-- Uygulama -->
+  <main id="app" class="app" hidden>
+
+    <!-- Liste görünümü -->
+    <section id="listView" class="view">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <span class="topbar-title">Kent İş Takip</span>
+          <span id="staffName" class="topbar-user"></span>
+        </div>
+        <div class="topbar-actions">
+          <button id="stagesButton" class="icon-btn" type="button" title="Aşamalar" hidden>⚙</button>
+          <button id="logoutButton" class="icon-btn" type="button" title="Çıkış">⎋</button>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <input id="searchInput" class="search" type="search" placeholder="İsim, telefon, adres ara" autocomplete="off">
+      </div>
+      <div id="stageChips" class="chips" role="tablist"></div>
+
+      <p id="syncStatus" class="sync"></p>
+      <div id="jobList" class="job-list"></div>
+      <p id="emptyState" class="empty" hidden>Kayıt yok.</p>
+
+      <button id="newJobButton" class="fab" type="button" aria-label="Yeni iş">＋ Yeni iş</button>
+    </section>
+
+    <!-- Detay görünümü -->
+    <section id="detailView" class="view" hidden>
+      <header class="topbar">
+        <button id="backButton" class="icon-btn" type="button" aria-label="Geri">‹</button>
+        <div class="topbar-brand">
+          <span id="detailTitle" class="topbar-title"></span>
+          <span id="detailNo" class="topbar-user"></span>
+        </div>
+        <div class="topbar-actions">
+          <button id="editJobButton" class="icon-btn" type="button" title="Düzenle">✎</button>
+        </div>
+      </header>
+
+      <div class="detail-body">
+        <div class="contact-row">
+          <a id="callLink" class="btn btn-ghost" href="#">📞 Ara</a>
+          <a id="mapLink" class="btn btn-ghost" href="#" target="_blank" rel="noopener">📍 Yol tarifi</a>
+        </div>
+        <p id="detailAddress" class="detail-address"></p>
+        <p id="detailNote" class="detail-note"></p>
+
+        <div id="stageCard" class="stage-card">
+          <span class="stage-card-label">Şu anki aşama</span>
+          <strong id="stageName"></strong>
+          <span id="stageSince" class="stage-since"></span>
+        </div>
+
+        <div id="statusBanner" class="status-banner" hidden></div>
+
+        <button id="nextStageButton" class="btn btn-primary btn-block btn-lg" type="button"></button>
+        <button id="pickStageButton" class="btn btn-outline btn-block" type="button">Başka aşama seç</button>
+
+        <div class="block">
+          <label class="block-label" for="appointmentInput">Aksa randevusu</label>
+          <div class="row">
+            <input id="appointmentInput" type="datetime-local">
+            <button id="saveAppointmentButton" class="btn btn-outline" type="button">Kaydet</button>
+          </div>
+        </div>
+
+        <div class="block">
+          <label class="block-label" for="noteInput">Not ekle</label>
+          <div class="row">
+            <input id="noteInput" type="text" placeholder="Kısa not" maxlength="500">
+            <button id="addNoteButton" class="btn btn-outline" type="button">Ekle</button>
+          </div>
+        </div>
+
+        <div class="block">
+          <span class="block-label">Geçmiş</span>
+          <ol id="timeline" class="timeline"></ol>
+        </div>
+
+        <div class="block danger-zone">
+          <button id="cancelJobButton" class="btn btn-danger-ghost btn-block" type="button">İşi iptal et</button>
+          <button id="reopenJobButton" class="btn btn-outline btn-block" type="button" hidden>İşi yeniden aç</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Yeni / düzenle formu -->
+  <div id="overlay" class="overlay" hidden></div>
+
+  <form id="jobDialog" class="sheet" hidden>
+    <h2 id="jobDialogTitle">Yeni iş</h2>
+    <label>Müşteri adı *
+      <input id="fName" type="text" required autocomplete="off" maxlength="120">
+    </label>
+    <label>Telefon
+      <input id="fPhone" type="tel" inputmode="tel" autocomplete="off" maxlength="30">
+    </label>
+    <label>İlçe
+      <input id="fDistrict" type="text" list="districtList" autocomplete="off" maxlength="60">
+      <datalist id="districtList">
+        <option value="Soma"><option value="Salihli"><option value="Manisa"><option value="Kırkağaç"><option value="Akhisar">
+      </datalist>
+    </label>
+    <label>Adres
+      <textarea id="fAddress" rows="2" maxlength="300"></textarea>
+    </label>
+    <label>Not
+      <textarea id="fNote" rows="2" maxlength="500"></textarea>
+    </label>
+    <label id="fStageWrap">Başlangıç aşaması
+      <select id="fStage"></select>
+    </label>
+    <p id="jobDialogError" class="error" role="alert"></p>
+    <div class="sheet-actions">
+      <button type="button" id="jobDialogCancel" class="btn btn-outline">Vazgeç</button>
+      <button type="submit" id="jobDialogSave" class="btn btn-primary">Kaydet</button>
+    </div>
+  </form>
+
+  <!-- Aşama seçici -->
+  <div id="stagePicker" class="sheet" hidden>
+    <h2>Aşama seç</h2>
+    <div id="stagePickerList" class="stage-picker"></div>
+    <div class="sheet-actions">
+      <button type="button" id="stagePickerCancel" class="btn btn-outline btn-block">Vazgeç</button>
+    </div>
+  </div>
+
+  <!-- Aşama yönetimi (admin) -->
+  <div id="stagesDialog" class="sheet" hidden>
+    <h2>Aşamalar</h2>
+    <p class="hint">İsim değiştirmek için üstüne dokunun. Pasif aşamalar seçilemez ama geçmiş kayıtlarda görünür.</p>
+    <div id="stagesList" class="stages-admin"></div>
+    <div class="sheet-actions">
+      <button type="button" id="stagesClose" class="btn btn-primary btn-block">Kapat</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="/admin/supabase-config.js"></script>
+  <script src="/admin/app.js"></script>
+</body>
+</html>

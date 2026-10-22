@@ -1,0 +1,13 @@
+{
+  "name": "Kent Doğalgaz İş Takip",
+  "short_name": "Kent İş",
+  "start_url": "/admin/",
+  "scope": "/admin/",
+  "display": "standalone",
+  "background_color": "#FBF7F0",
+  "theme_color": "#16235C",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon-96x96.png", "sizes": "96x96", "type": "image/png" }
+  ]
+}
