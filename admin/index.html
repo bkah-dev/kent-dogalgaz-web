@@ -53,8 +53,15 @@
         </div>
       </header>
 
-      <div class="toolbar">
+      <div class="toolbar toolbar-row">
         <input id="searchInput" class="search" type="search" placeholder="İsim, telefon, adres ara" autocomplete="off">
+        <select id="sortSelect" class="sort" title="Sıralama">
+          <option value="updated">Son işlem</option>
+          <option value="waiting">En uzun bekleyen</option>
+          <option value="remaining">Kalan ödeme</option>
+          <option value="name">İsim A-Z</option>
+          <option value="newest">Yeni açılan</option>
+        </select>
       </div>
       <div id="stageChips" class="chips" role="tablist"></div>
 
@@ -83,8 +90,14 @@
       </div>
       <div id="moneyMode" class="chips" role="tablist">
         <button type="button" class="chip active" data-mode="debt">Borcu olanlar</button>
-        <button type="button" class="chip" data-mode="all">Hepsi</button>
+        <button type="button" class="chip" data-mode="due">Sözü gelen</button>
         <button type="button" class="chip" data-mode="paid">Ödemesi biten</button>
+        <button type="button" class="chip" data-mode="all">Hepsi</button>
+      </div>
+      <div id="moneyStatus" class="chips chips-sub" role="tablist">
+        <button type="button" class="chip active" data-status="open">Açık işler</button>
+        <button type="button" class="chip" data-status="closed">Biten işler</button>
+        <button type="button" class="chip" data-status="all">Açık + biten</button>
       </div>
 
       <div id="moneySummary" class="money-summary"></div>

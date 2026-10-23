@@ -113,6 +113,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
 .topbar-actions { display: flex; gap: 2px; }
 
 .toolbar { padding: 10px 14px 4px; }
+.toolbar-row { display: flex; gap: 8px; }
+.toolbar-row .search { flex: 1; min-width: 0; }
+.toolbar-row .sort { width: auto; flex: 0 0 auto; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: .9rem; max-width: 46%; }
+.chips-sub { padding-top: 0; }
+.chips-sub .chip { min-height: 32px; font-size: .82rem; padding: 4px 11px; }
 .search { border-radius: 999px; padding-left: 18px; }
 
 .chips {
@@ -340,15 +345,24 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
 .money-count { margin: 0; padding: 0 14px 8px; font-size: .85rem; color: var(--muted); font-weight: 600; min-height: 1.2em; }
 .money-list { display: grid; gap: 6px; padding: 0 14px 40px; }
 .money-row {
-  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px 8px 10px;
+  width: 100%; display: grid; gap: 2px; min-height: 58px; padding: 8px 12px 6px 10px;
   background: var(--paper); border: 0; border-left: 5px solid var(--navy); border-radius: 12px;
   box-shadow: var(--shadow); text-align: left; cursor: pointer;
 }
 .money-row:active { background: #fdfaf4; }
-.mr-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
-.mr-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mr-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.mr-bottom { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mr-bottom .mr-sub { flex: 1; }
+.mr-name { flex: 1; min-width: 0; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mr-name small { color: var(--muted); font-weight: 600; }
 .mr-sub { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr-sub.due { color: var(--red); font-weight: 700; }
 .mr-kalan { flex: 0 0 auto; font-weight: 800; color: var(--red); white-space: nowrap; font-size: 1.02rem; }
 .mr-kalan.ok { color: var(--green); font-size: .9rem; }
 .mr-kalan.none { color: var(--muted); font-weight: 600; }
+.mr-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.mr-act {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  background: rgba(22, 35, 92, .08); color: var(--navy); font-size: 1.05rem;
+}
+.mr-act:active { background: rgba(22, 35, 92, .16); }

@@ -1,5 +1,8 @@
 const STAFF_EMAIL_SUFFIX = "@personel.kentmekanikdogalgaz.com";
 const FILTER_KEY = "kent-is-filter";
+const SORT_KEY = "kent-is-sort";
+const MONEY_MODE_KEY = "kent-para-mod";
+const MONEY_STATUS_KEY = "kent-para-durum";
 const WARN_DAYS = 7;
 const FILE_BUCKET = "job-files";
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -35,8 +38,10 @@ const state = {
   files: [],
   filter: localStorage.getItem(FILTER_KEY) || "open",
   search: "",
+  sort: localStorage.getItem(SORT_KEY) || "updated",
   returnView: "list",
-  moneyMode: "debt",
+  moneyMode: localStorage.getItem(MONEY_MODE_KEY) || "debt",
+  moneyStatus: localStorage.getItem(MONEY_STATUS_KEY) || "open",
   moneySearch: "",
   activeJobId: null,
   editingJobId: null,
@@ -48,8 +53,8 @@ const state = {
 const el = Object.fromEntries([
   "authGate", "loginForm", "loginUsername", "loginPassword", "loginError", "loginButton",
   "app", "listView", "detailView", "staffName", "stagesButton", "logoutButton",
-  "searchInput", "stageChips", "syncStatus", "jobList", "emptyState", "newJobButton",
-  "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
+  "searchInput", "sortSelect", "stageChips", "syncStatus", "jobList", "emptyState", "newJobButton",
+  "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneyStatus", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
   "backButton", "detailTitle", "detailNo", "editJobButton", "callLink", "waLink", "mapLink",
   "detailAddress", "detailNote", "alertStrip", "stageCard", "stageName", "stageSince", "statusBanner",
   "nextStageButton", "pickStageButton",
@@ -293,7 +298,19 @@ function filteredJobs() {
     if (!q) return true;
     const hay = normalizeText(`${job.customer_name} ${job.phone} ${job.address} ${job.district} ${job.note} #${job.job_no}`);
     return hay.includes(q);
-  });
+  }).sort(jobComparator(state.sort));
+}
+
+function jobComparator(sort) {
+  const byName = (a, b) => a.customer_name.localeCompare(b.customer_name, "tr");
+  const time = (iso) => (iso ? new Date(iso).getTime() : 0);
+  switch (sort) {
+    case "waiting": return (a, b) => time(a.stage_changed_at) - time(b.stage_changed_at) || byName(a, b);
+    case "remaining": return (a, b) => (Number(b.remaining) || 0) - (Number(a.remaining) || 0) || byName(a, b);
+    case "name": return byName;
+    case "newest": return (a, b) => time(b.created_at) - time(a.created_at);
+    default: return (a, b) => time(b.updated_at) - time(a.updated_at);
+  }
 }
 
 function renderChips() {
@@ -352,9 +369,12 @@ function moneyJobs() {
   return state.jobs
     .filter((job) => {
       if (job.status === "cancelled") return false;
+      if (state.moneyStatus === "open" && job.status !== "open") return false;
+      if (state.moneyStatus === "closed" && job.status !== "closed") return false;
       const remaining = Number(job.remaining) || 0;
       const price = Number(job.price) || 0;
       if (state.moneyMode === "debt" && !(remaining > 0)) return false;
+      if (state.moneyMode === "due" && !(remaining > 0 && isDueDate(job.reminder_at))) return false;
       if (state.moneyMode === "paid" && !(price > 0 && remaining <= 0)) return false;
       if (!q) return true;
       return normalizeText(`${job.customer_name} ${job.phone} ${job.address} ${job.district} ${job.note} #${job.job_no}`).includes(q);
@@ -383,6 +403,7 @@ function renderMoney() {
     ? `${jobs.length} iş${state.moneyMode === "all" ? ` · ${debtCount} tanesinde borç var` : ""}`
     : "";
   el.moneyMode.querySelectorAll("[data-mode]").forEach((c) => c.classList.toggle("active", c.dataset.mode === state.moneyMode));
+  el.moneyStatus.querySelectorAll("[data-status]").forEach((c) => c.classList.toggle("active", c.dataset.status === state.moneyStatus));
   el.moneyEmpty.hidden = jobs.length > 0;
   el.moneyList.innerHTML = jobs.map((job) => {
     const price = Number(job.price) || 0;
@@ -395,20 +416,31 @@ function renderMoney() {
       : remaining > 0
         ? `<span class="mr-kalan">${escapeHtml(money.format(remaining))}</span>`
         : '<span class="mr-kalan ok">✓ Ödendi</span>';
+    const tel = phoneHref(job.phone);
+    const wa = remaining > 0 ? whatsappHref(job.phone, fillTemplate(MESSAGE_TEMPLATES.find((t) => t.key === "odeme").text, job)) : "";
+    const reminder = job.reminder_at ? `${isDueDate(job.reminder_at) ? "🔔 sözü geçti " : "🔔 "}${dayShortFmt.format(new Date(job.reminder_at + "T00:00"))}` : "";
     return `
-      <button type="button" class="money-row" data-id="${job.id}" style="border-left-color:${escapeHtml(job.stage_color)}">
-        <span class="mr-main">
+      <article class="money-row" data-id="${job.id}" style="border-left-color:${escapeHtml(job.stage_color)}">
+        <span class="mr-top">
           <span class="mr-name">${escapeHtml(job.customer_name)} <small>#${job.job_no}</small></span>
-          <span class="mr-sub">${escapeHtml(sub)}</span>
-          <span class="mr-sub">${escapeHtml([job.status === "cancelled" ? "İptal" : job.stage_short_name || job.stage_name, job.district, job.reminder_at ? "🔔 " + dayShortFmt.format(new Date(job.reminder_at + "T00:00")) : ""].filter(Boolean).join(" · "))}</span>
+          ${right}
         </span>
-        ${right}
-      </button>`;
+        <span class="mr-sub">${escapeHtml(sub)}</span>
+        <span class="mr-bottom">
+          <span class="mr-sub${job.reminder_at && isDueDate(job.reminder_at) && remaining > 0 ? " due" : ""}">${escapeHtml([job.status === "closed" ? "Bitti" : job.stage_short_name || job.stage_name, job.district, reminder].filter(Boolean).join(" · "))}</span>
+          <span class="mr-actions">
+            ${tel ? `<a class="mr-act" href="${tel}" data-call title="Ara">📞</a>` : ""}
+            ${wa ? `<a class="mr-act" href="${wa}" target="_blank" rel="noopener" data-call title="WhatsApp kalan ödeme mesajı">💬</a>` : ""}
+          </span>
+        </span>
+      </article>`;
   }).join("");
 }
 
-function openMoney() {
+function openMoney(pushHistory = true) {
+  if (pushHistory) history.pushState({ view: "money" }, "");
   el.listView.hidden = true;
+  el.detailView.hidden = true;
   el.moneyView.hidden = false;
   window.scrollTo(0, 0);
   renderMoney();
@@ -422,7 +454,8 @@ function closeMoney() {
 function moneyShareText() {
   const jobs = moneyJobs();
   const t = moneyTotals(jobs);
-  const title = { debt: "Kalan ödemeler", all: "Tüm işler ödeme durumu", paid: "Ödemesi biten işler" }[state.moneyMode];
+  const status = { open: "açık işler", closed: "biten işler", all: "açık + biten" }[state.moneyStatus];
+  const title = { debt: "Kalan ödemeler", due: "Sözü gelen ödemeler", all: "Tüm işler ödeme durumu", paid: "Ödemesi biten işler" }[state.moneyMode] + ` (${status})`;
   const lines = jobs.map((j) => {
     const remaining = Number(j.remaining) || 0;
     const price = Number(j.price) || 0;
@@ -446,9 +479,12 @@ async function shareMoney() {
 // ---------------------------------------------------------------------------
 // Detay
 // ---------------------------------------------------------------------------
-async function openDetail(jobId) {
+async function openDetail(jobId, pushHistory = true) {
   state.activeJobId = jobId;
-  state.returnView = el.moneyView.hidden ? "list" : "money";
+  if (pushHistory) {
+    state.returnView = el.moneyView.hidden ? "list" : "money";
+    history.pushState({ view: "detail", id: jobId, from: state.returnView }, "");
+  }
   el.listView.hidden = true;
   el.moneyView.hidden = true;
   el.detailView.hidden = false;
@@ -469,6 +505,29 @@ function closeDetail() {
   el.detailView.hidden = true;
   if (state.returnView === "money") { el.moneyView.hidden = false; renderMoney(); }
   else el.listView.hidden = false;
+}
+
+// Telefonun geri tuşu: detay → liste/kalan listesi, kalan listesi → liste. Açık alt sayfa varsa önce onu kapatır.
+function goBack() {
+  if (history.state?.view) history.back();
+  else if (!el.detailView.hidden) closeDetail();
+  else if (!el.moneyView.hidden) closeMoney();
+}
+
+function applyHistoryState(s) {
+  closeSheets();
+  if (s?.view === "detail" && state.jobs.some((j) => j.id === s.id)) {
+    state.returnView = s.from === "money" ? "money" : "list";
+    openDetail(s.id, false);
+  } else if (s?.view === "money") {
+    state.activeJobId = null;
+    openMoney(false);
+  } else {
+    state.activeJobId = null;
+    el.detailView.hidden = true;
+    el.moneyView.hidden = true;
+    el.listView.hidden = false;
+  }
 }
 
 function renderDetail() {
@@ -956,6 +1015,12 @@ el.loginForm.addEventListener("submit", login);
 el.logoutButton.addEventListener("click", () => db.auth.signOut());
 
 el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value; renderList(); });
+el.sortSelect.value = state.sort;
+el.sortSelect.addEventListener("change", () => {
+  state.sort = el.sortSelect.value;
+  localStorage.setItem(SORT_KEY, state.sort);
+  renderList();
+});
 el.stageChips.addEventListener("click", (event) => {
   const chip = event.target.closest("[data-filter]");
   if (!chip) return;
@@ -971,22 +1036,34 @@ el.jobList.addEventListener("click", (event) => {
 });
 el.newJobButton.addEventListener("click", () => openJobDialog());
 
-el.moneyButton.addEventListener("click", openMoney);
-el.moneyBack.addEventListener("click", closeMoney);
+el.moneyButton.addEventListener("click", () => openMoney());
+el.moneyBack.addEventListener("click", goBack);
 el.moneyShare.addEventListener("click", shareMoney);
 el.moneySearch.addEventListener("input", () => { state.moneySearch = el.moneySearch.value; renderMoney(); });
 el.moneyMode.addEventListener("click", (event) => {
   const chip = event.target.closest("[data-mode]");
   if (!chip) return;
   state.moneyMode = chip.dataset.mode;
+  localStorage.setItem(MONEY_MODE_KEY, state.moneyMode);
+  renderMoney();
+});
+el.moneyStatus.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-status]");
+  if (!chip) return;
+  state.moneyStatus = chip.dataset.status;
+  localStorage.setItem(MONEY_STATUS_KEY, state.moneyStatus);
   renderMoney();
 });
 el.moneyList.addEventListener("click", (event) => {
+  if (event.target.closest("[data-call]")) return;
   const row = event.target.closest("[data-id]");
   if (row) openDetail(row.dataset.id);
 });
 
-el.backButton.addEventListener("click", closeDetail);
+window.addEventListener("popstate", (event) => { if (state.user) applyHistoryState(event.state); });
+history.replaceState(null, "");
+
+el.backButton.addEventListener("click", goBack);
 el.editJobButton.addEventListener("click", () => openJobDialog(activeJob()));
 el.nextStageButton.addEventListener("click", () => changeStage(Number(el.nextStageButton.dataset.stageId)));
 el.pickStageButton.addEventListener("click", openStagePicker);

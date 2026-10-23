@@ -38,7 +38,9 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - "Bugün" filtresi: Aksa randevusu bugün/geçmiş, hatırlatma günü gelmiş, montaj planı bugün.
 - Aksa randevu sonucu: "Gaz açıldı" (aşamayı ilerletir) / "Açılamadı" (sebep yazılır, randevu silinir, tekrar girilir).
 - Müşteriye hazır WhatsApp mesajları (keşif takibi, sayaç al, randevu bilgisi, kalan ödeme). wa.me bağlantısı, uygulama göndermez, WhatsApp'ta açar.
-- Kalan ödemeler listesi (liste ekranında üstteki ₺ düğmesi): tüm işler tek listede, en çok kalanı olan üstte; üstte toplam fiyat / ödenen / kalan. "Borcu olanlar / Hepsi / Ödemesi biten" seçimi ve arama; toplamlar o an görünen işlere göre hesaplanır. ⇪ ile liste metin olarak paylaşılır (WhatsApp'a yapıştırmak için). Satıra dokununca işin detayı açılır, geri gelince liste kaldığı yerden devam eder.
+- Kalan ödemeler listesi (liste ekranında üstteki ₺ düğmesi): tüm işler tek listede, en çok kalanı olan üstte; üstte toplam fiyat / ödenen / kalan. İki filtre satırı: "Borcu olanlar / Sözü gelen / Ödemesi biten / Hepsi" ve "Açık işler / Biten işler / Açık + biten"; seçimler telefonda hatırlanır. Arama; toplamlar o an görünen işlere göre hesaplanır. Satırda 📞 arama ve 💬 "kalan ödeme" WhatsApp mesajı (tutar hazır yazılı). Sözü geçmiş hatırlatmalar kırmızı. ⇪ ile liste metin olarak paylaşılır (WhatsApp'a yapıştırmak için). Satıra dokununca işin detayı açılır, geri gelince liste kaldığı yerden devam eder.
+- Ana listede sıralama (aramanın yanındaki kutu): Son işlem / En uzun bekleyen / Kalan ödeme / İsim / Yeni açılan. Seçim hatırlanır.
+- Telefonun geri tuşu uygulama içinde çalışır: detaydan listeye, kalan listesinden ana listeye döner; uygulamayı kapatmaz.
 
 ## Excel'den toplu aktarım (Soma iş listesi)
 
