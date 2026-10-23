@@ -39,9 +39,60 @@
   <!-- Uygulama -->
   <main id="app" class="app" hidden>
 
-    <!-- Liste -->
-    <section id="listView" class="view">
+    <!-- Sol menü (bilgisayarda sabit, telefonda ☰ ile çekmece) -->
+    <nav id="sideNav" class="side-nav" aria-label="Menü">
+      <div class="nav-brand">
+        <span class="nav-flame">🔥</span>
+        <div class="nav-brand-text"><strong>KENT</strong><small>DOĞALGAZ · İş takip</small></div>
+        <button id="navClose" class="icon-btn nav-close" type="button" aria-label="Menüyü kapat">✕</button>
+      </div>
+      <div class="nav-list">
+        <button type="button" class="nav-item" data-nav="home"><i>🏠</i><span>Ana panel</span></button>
+        <button type="button" class="nav-item" data-nav="list" data-filter="open"><i>📋</i><span>İşler</span><b class="nav-count" data-count="open"></b></button>
+        <button type="button" class="nav-item" data-nav="list" data-filter="group:kesif"><i>🔎</i><span>Keşifler</span><b class="nav-count" data-count="group:kesif"></b></button>
+        <button type="button" class="nav-item" data-nav="list" data-filter="group:sozlesme"><i>📝</i><span>Sözleşmeler</span><b class="nav-count" data-count="group:sozlesme"></b></button>
+        <button type="button" class="nav-item" data-nav="list" data-filter="group:proje"><i>📐</i><span>Projeler</span><b class="nav-count" data-count="group:proje"></b></button>
+        <button type="button" class="nav-item" data-nav="list" data-filter="group:gaz"><i>🔥</i><span>Gaz açım</span><b class="nav-count" data-count="group:gaz"></b></button>
+        <button type="button" class="nav-item" data-nav="calendar"><i>📅</i><span>Takvim</span></button>
+        <button type="button" class="nav-item" data-nav="money"><i>₺</i><span>Tahsilatlar</span><b class="nav-count" data-count="money"></b></button>
+        <button type="button" class="nav-item" data-nav="summary"><i>📊</i><span>Raporlar</span></button>
+        <button type="button" class="nav-item" data-nav="settings" id="navSettings" hidden><i>⚙</i><span>Ayarlar</span></button>
+      </div>
+      <div class="nav-foot">
+        <span id="navStaff" class="nav-staff"></span>
+        <button type="button" class="nav-item" data-nav="logout"><i>⎋</i><span>Çıkış</span></button>
+      </div>
+    </nav>
+
+    <!-- Ana panel -->
+    <section id="homeView" class="view" hidden>
       <header class="topbar">
+        <button id="homeMenu" class="icon-btn menu-btn" type="button" aria-label="Menü">☰</button>
+        <div class="topbar-brand">
+          <span class="topbar-title">Ana panel</span>
+          <span id="homeDate" class="topbar-user"></span>
+        </div>
+        <div class="topbar-actions">
+          <button id="homeNewJob" class="btn btn-primary btn-small" type="button">+ Yeni iş</button>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div id="homeTiles" class="home-tiles"></div>
+        <div class="section-card">
+          <h3 class="card-title">Bugün</h3>
+          <div id="homeToday" class="cal-day-list"></div>
+        </div>
+        <div class="section-card hygiene">
+          <h3 class="card-title">Takip edilecekler</h3>
+          <ul id="homeFollow" class="plain-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Liste -->
+    <section id="listView" class="view" hidden>
+      <header class="topbar">
+        <button id="listMenu" class="icon-btn menu-btn" type="button" aria-label="Menü">☰</button>
         <div class="topbar-brand">
           <span class="topbar-title">Kent İş Takip</span>
           <span id="staffName" class="topbar-user"></span>

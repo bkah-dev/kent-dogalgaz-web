@@ -4,6 +4,8 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 
 ## Neler var
 
+- Giriş sonrası **Ana panel**: dört kutu (açık işler, bu hafta iş günü, yaklaşan ödeme + toplam alacak, bu hafta Aksa randevusu), "Bugün" listesi (iş günleri, Aksa randevuları, ödeme sözü gelen/geçenler; satırda 📞/💬) ve "Takip edilecekler" (keşif cevabı bekleyen, sözü geçmiş ödeme, 7+ gün bekleyen, gaz açım eksiği, fiyatsız, telefonsuz). Her kutu ve satır dokununca ilgili filtreli ekrana gider.
+- **Sol menü**: bilgisayarda (900 px ve üstü) sabit, telefonda ☰ ile açılan çekmece. Ana panel, İşler, Keşifler (keşif+teklif), Sözleşmeler (sözleşme+planlandı+montaj), Projeler (gönderildi+onay), Gaz açım (eksikler+randevu+gaz), Takvim, Tahsilatlar, Raporlar, Ayarlar (admin), Çıkış. Sayılar canlı. Grup seçince listede geçici bir çip olarak görünür.
 - Personel girişi (kullanıcı adı + parola)
 - İş listesi: aşamaya göre filtre, isim/telefon/adres arama
 - Kartta tek dokunuşla arama, detayda yol tarifi

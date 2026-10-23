@@ -32,6 +32,29 @@ const MESSAGE_TEMPLATES = [
   { key: "bos", title: "Boş mesaj", hint: "Sadece sohbeti açar", text: "" },
 ];
 
+// Sol menü grupları: aşama anahtarlarına göre
+const STAGE_GROUPS = {
+  kesif: { label: "Keşifler", keys: ["kesif", "teklif"] },
+  sozlesme: { label: "Sözleşmeler", keys: ["sozlesme", "planlandi", "montaj"] },
+  proje: { label: "Projeler", keys: ["proje_gonderildi", "proje_onay"] },
+  gaz: { label: "Gaz açım", keys: ["eksikler", "randevu", "gaz"] },
+};
+const EXTRA_FILTERS = {
+  waiting: { label: "7+ gün bekleyen", test: (j) => j.status === "open" && daysSince(j.stage_changed_at) >= WARN_DAYS },
+  noprice: { label: "Fiyatı girilmemiş", test: (j) => j.status === "open" && !(Number(j.price) > 0) },
+  nophone: { label: "Telefonu eksik", test: (j) => j.status === "open" && phoneDigits(j.phone).length !== 10 },
+};
+function matchesFilter(job, filter) {
+  if (filter === "open") return job.status === "open";
+  if (filter === "closed") return job.status !== "open";
+  if (filter === "today") return isTodayJob(job);
+  if (filter === "money") return Number(job.remaining) > 0 && job.status !== "cancelled";
+  if (filter.startsWith("stage:")) return job.status === "open" && String(job.stage_id) === filter.slice(6);
+  if (filter.startsWith("group:")) return job.status === "open" && (STAGE_GROUPS[filter.slice(6)]?.keys || []).includes(job.stage_key);
+  if (EXTRA_FILTERS[filter]) return EXTRA_FILTERS[filter].test(job);
+  return true;
+}
+
 const state = {
   user: null,
   member: null,
@@ -70,6 +93,7 @@ const state = {
 const el = Object.fromEntries([
   "authGate", "loginForm", "loginUsername", "loginPassword", "loginError", "loginButton",
   "app", "listView", "detailView", "staffName", "stagesButton", "logoutButton",
+  "sideNav", "navClose", "navSettings", "navStaff", "homeView", "homeMenu", "homeDate", "homeNewJob", "homeTiles", "homeToday", "homeFollow", "listMenu",
   "searchInput", "sortSelect", "stageChips", "districtChips", "syncStatus", "jobList", "emptyState", "newJobButton",
   "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneyStatus", "moneyDistrict", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
   "summaryButton", "summaryView", "summaryBack", "summaryNow", "summaryStatus", "summaryTable", "summaryPipeline", "summaryHygiene",
@@ -253,7 +277,7 @@ function allSheets() {
 }
 
 function anySheetOpen() {
-  return allSheets().some((s) => !s.hidden);
+  return allSheets().some((s) => !s.hidden) || el.sideNav.classList.contains("open");
 }
 
 // Alt pencere açılınca geçmişe bir adım eklenir; telefonun geri tuşu önce pencereyi kapatır.
@@ -267,6 +291,7 @@ function openSheet(sheet) {
 function closeSheets() {
   const wasOpen = anySheetOpen();
   el.overlay.hidden = true;
+  el.sideNav.classList.remove("open");
   allSheets().forEach((s) => { s.hidden = true; });
   if (!(wasOpen && history.state?.sheet)) return Promise.resolve();
   state.skipPop = true;
@@ -333,6 +358,8 @@ async function loadJobs() {
   el.syncStatus.textContent = "";
   renderChips();
   renderList();
+  renderNavCounts();
+  if (!el.homeView.hidden) renderHome();
   if (!el.moneyView.hidden) renderMoney();
   if (!el.calendarView.hidden) renderCalendar();
   renderCrewList();
@@ -392,13 +419,7 @@ function filteredJobs() {
   const q = normalizeText(state.search.trim());
   return state.jobs.filter((job) => {
     if (state.district !== "all" && districtOf(job) !== state.district) return false;
-    if (state.filter === "open" && job.status !== "open") return false;
-    if (state.filter === "closed" && job.status === "open") return false;
-    if (state.filter === "today" && !isTodayJob(job)) return false;
-    if (state.filter === "money" && !(Number(job.remaining) > 0 && job.status !== "cancelled")) return false;
-    if (/^stage:/.test(state.filter)) {
-      if (job.status !== "open" || String(job.stage_id) !== state.filter.slice(6)) return false;
-    }
+    if (!matchesFilter(job, state.filter)) return false;
     if (!q) return true;
     const hay = normalizeText(`${job.customer_name} ${job.phone} ${job.address} ${job.district} ${job.note} #${job.job_no}`);
     return hay.includes(q);
@@ -447,6 +468,11 @@ function renderChips() {
       .map((s) => ({ key: `stage:${s.id}`, label: s.short_name || s.name, count: open.filter((j) => j.stage_id === s.id).length })),
     { key: "closed", label: "Biten / iptal", count: closed, always: true },
   ].filter((c) => c.always || c.count > 0);
+  // Menüden gelen grup/özel filtre: geçici çip olarak başa eklenir
+  if (state.filter.startsWith("group:") || EXTRA_FILTERS[state.filter]) {
+    const label = state.filter.startsWith("group:") ? STAGE_GROUPS[state.filter.slice(6)]?.label : EXTRA_FILTERS[state.filter].label;
+    if (label) chips.unshift({ key: state.filter, label, count: state.jobs.filter((j) => matchesFilter(j, state.filter)).length, always: true });
+  }
   if (!chips.some((c) => c.key === state.filter)) {
     state.filter = "open";
     localStorage.setItem(FILTER_KEY, state.filter);
@@ -563,20 +589,44 @@ function renderMoney() {
 }
 
 function showView(view) {
+  el.homeView.hidden = view !== "home";
   el.listView.hidden = view !== "list";
   el.moneyView.hidden = view !== "money";
   el.summaryView.hidden = view !== "summary";
   el.calendarView.hidden = view !== "calendar";
   el.detailView.hidden = view !== "detail";
   window.scrollTo(0, 0);
+  renderNavActive(view);
+}
+
+// Görünümü açıp içeriğini tazeler (geri dönüşlerde)
+function showViewAndRender(view) {
+  if (view === "money") { showView("money"); renderMoney(); }
+  else if (view === "calendar") { showView("calendar"); renderCalendar(); }
+  else if (view === "summary") openSummary(false);
+  else if (view === "list") { showView("list"); renderChips(); renderList(); }
+  else { showView("home"); renderHome(); }
 }
 
 function currentView() {
   if (!el.detailView.hidden) return "detail";
+  if (!el.homeView.hidden) return "home";
   if (!el.moneyView.hidden) return "money";
   if (!el.summaryView.hidden) return "summary";
   if (!el.calendarView.hidden) return "calendar";
-  return "list";
+  if (!el.listView.hidden) return "list";
+  return "home";
+}
+
+function openList(filter, pushHistory = true) {
+  if (filter) {
+    state.filter = filter;
+    localStorage.setItem(FILTER_KEY, filter);
+  }
+  if (pushHistory && currentView() !== "list") history.pushState({ view: "list" }, "");
+  showView("list");
+  renderChips();
+  renderList();
 }
 
 function openMoney(pushHistory = true) {
@@ -586,7 +636,7 @@ function openMoney(pushHistory = true) {
 }
 
 function closeMoney() {
-  showView("list");
+  showViewAndRender("home");
 }
 
 // ---------------------------------------------------------------------------
@@ -881,7 +931,7 @@ function weekShareText() {
 async function openDetail(jobId, pushHistory = true) {
   state.activeJobId = jobId;
   if (pushHistory) {
-    state.returnView = ["money", "calendar"].includes(currentView()) ? currentView() : "list";
+    state.returnView = currentView() === "detail" ? "home" : currentView();
     history.pushState({ view: "detail", id: jobId, from: state.returnView }, "");
   }
   showView("detail");
@@ -898,9 +948,7 @@ async function openDetail(jobId, pushHistory = true) {
 
 function closeDetail() {
   state.activeJobId = null;
-  if (state.returnView === "money") { showView("money"); renderMoney(); }
-  else if (state.returnView === "calendar") { showView("calendar"); renderCalendar(); }
-  else showView("list");
+  showViewAndRender(state.returnView || "home");
 }
 
 // Telefonun geri tuşu: alt pencere → kapat; detay → liste/kalan listesi; kalan listesi/özet → liste.
@@ -908,20 +956,21 @@ function goBack() {
   if (anySheetOpen()) { closeSheets(); return; }
   if (history.state?.view) history.back();
   else if (currentView() === "detail") closeDetail();
-  else showView("list");
+  else showViewAndRender("home");
 }
 
 function applyHistoryState(s) {
   if (state.skipPop) { state.skipPop = false; state.popResolve?.(); state.popResolve = null; return; }
   if (anySheetOpen()) {
     el.overlay.hidden = true;
+    el.sideNav.classList.remove("open");
     allSheets().forEach((x) => { x.hidden = true; });
     const sameView = (s?.view || "list") === currentView() && (s?.view !== "detail" || s.id === state.activeJobId);
     if (sameView) return; // sadece pencere kapandı, görünüm aynı
   }
   if (s?.sheet) { history.back(); return; } // ileri tuşuyla pencere durumuna gelindi: atla
   if (s?.view === "detail" && state.jobs.some((j) => j.id === s.id)) {
-    state.returnView = ["money", "calendar"].includes(s.from) ? s.from : "list";
+    state.returnView = ["money", "calendar", "list", "home"].includes(s.from) ? s.from : "home";
     openDetail(s.id, false);
   } else if (s?.view === "money") {
     state.activeJobId = null;
@@ -932,10 +981,114 @@ function applyHistoryState(s) {
   } else if (s?.view === "calendar") {
     state.activeJobId = null;
     openCalendar(false);
+  } else if (s?.view === "list") {
+    state.activeJobId = null;
+    openList(null, false);
   } else {
     state.activeJobId = null;
-    showView("list");
+    showViewAndRender("home");
   }
+}
+
+// ---------------------------------------------------------------------------
+// Sol menü + ana panel
+// ---------------------------------------------------------------------------
+function navIsDrawer() {
+  return !window.matchMedia("(min-width: 900px)").matches;
+}
+function openNav() {
+  if (!navIsDrawer()) return;
+  if (!anySheetOpen()) history.pushState({ ...(history.state || {}), sheet: true }, "");
+  el.overlay.hidden = false;
+  el.sideNav.classList.add("open");
+}
+function renderNavActive(view) {
+  el.sideNav.querySelectorAll(".nav-item").forEach((b) => {
+    const on = b.dataset.nav === view && (view !== "list" || b.dataset.filter === state.filter || (b.dataset.filter === "open" && !el.sideNav.querySelector(`[data-nav="list"][data-filter="${CSS.escape(state.filter)}"]`)));
+    b.classList.toggle("active", on);
+  });
+}
+function renderNavCounts() {
+  el.sideNav.querySelectorAll("[data-count]").forEach((b) => {
+    const n = state.jobs.filter((j) => matchesFilter(j, b.dataset.count)).length;
+    b.textContent = n ? String(n) : "";
+  });
+}
+async function navigate(target, filter) {
+  await closeSheets();
+  if (target === "home") { if (currentView() !== "home") history.pushState({ view: "home" }, ""); showViewAndRender("home"); }
+  else if (target === "list") openList(filter || "open");
+  else if (target === "calendar") openCalendar();
+  else if (target === "money") openMoney();
+  else if (target === "summary") openSummary();
+  else if (target === "settings") { renderAdminLists(); openSheet(el.stagesDialog); }
+  else if (target === "logout") db.auth.signOut();
+}
+
+function homeRow(j, kind) {
+  if (kind !== "pay") return calRow(j, kind);
+  const tel = phoneHref(j.phone);
+  const wa = whatsappHref(j.phone, fillTemplate(MESSAGE_TEMPLATES.find((t) => t.key === "odeme").text, j));
+  const due = j.reminder_at && j.reminder_at < todayStr();
+  return `<article class="money-row cal-row" data-id="${j.id}" style="border-left-color:${escapeHtml(j.stage_color)}">
+      <div class="mr-top"><span class="mr-name">${escapeHtml(j.customer_name)}</span><span class="mr-kalan">${money.format(j.remaining)}</span></div>
+      <div class="mr-bottom"><span class="mr-sub${due ? " due" : ""}">${due ? "sözü " + dayShortFmt.format(fromYmd(j.reminder_at)) + " geçti" : "ödeme sözü bugün"}${j.reminder_note ? " · " + escapeHtml(j.reminder_note) : ""}</span>
+        <span class="mr-actions">
+          ${tel ? `<a class="mr-act" href="${tel}" data-call title="Ara">📞</a>` : ""}
+          ${wa ? `<a class="mr-act" href="${wa}" target="_blank" rel="noopener" data-call title="WhatsApp kalan ödeme mesajı">💬</a>` : ""}
+        </span></div>
+    </article>`;
+}
+
+function renderHome() {
+  const today = todayStr();
+  const weekEnd = ymd(new Date(Date.now() + 6 * 86400000));
+  const soon = ymd(new Date(Date.now() + 7 * 86400000));
+  const live = state.jobs.filter((j) => j.status !== "cancelled");
+  const open = state.jobs.filter((j) => j.status === "open");
+  const plannedWeek = open.filter((j) => j.planned_at && j.planned_at >= today && j.planned_at <= weekEnd);
+  const plannedToday = open.filter((j) => j.planned_at === today);
+  const apptWeek = open.filter((j) => { const d = apptDay(j); return d && d <= weekEnd; });
+  const apptToday = open.filter((j) => apptDay(j) === today);
+  const debtors = live.filter((j) => Number(j.remaining) > 0);
+  const paySoon = debtors.filter((j) => j.reminder_at && j.reminder_at <= soon);
+  const payToday = debtors.filter((j) => j.reminder_at && j.reminder_at <= today);
+  const totalDebt = debtors.reduce((s, j) => s + Number(j.remaining), 0);
+
+  el.homeDate.textContent = `${weekdayFmt.format(new Date())} ${dayFmt.format(new Date())}`;
+  el.homeTiles.innerHTML = `
+    <button type="button" class="home-tile t-open" data-go="list:open"><span>Açık işler</span><strong>${open.length}</strong><small>${open.filter((j) => daysSince(j.stage_changed_at) >= WARN_DAYS).length} tanesi 7+ gün bekliyor</small></button>
+    <button type="button" class="home-tile t-plan" data-go="calendar"><span>Bu hafta iş günü</span><strong>${plannedWeek.length}</strong><small>bugün ${plannedToday.length}</small></button>
+    <button type="button" class="home-tile t-pay" data-go="money:due"><span>Yaklaşan ödeme</span><strong>${paySoon.length}</strong><small>toplam alacak ${money.format(totalDebt)}</small></button>
+    <button type="button" class="home-tile t-appt" data-go="calendar"><span>Aksa randevusu</span><strong>${apptWeek.length}</strong><small>bu hafta · bugün ${apptToday.length}</small></button>`;
+
+  let todayHtml = "";
+  if (plannedToday.length) todayHtml += `<h4 class="cal-sub">İş günü · ${plannedToday.length}</h4>` + plannedToday.map((j) => homeRow(j, "plan")).join("");
+  if (apptToday.length) todayHtml += `<h4 class="cal-sub">Aksa randevusu · ${apptToday.length}</h4>` + apptToday.map((j) => homeRow(j, "appt")).join("");
+  if (payToday.length) todayHtml += `<h4 class="cal-sub">Ödeme sözü · ${payToday.length}</h4>` + payToday.map((j) => homeRow(j, "pay")).join("");
+  el.homeToday.innerHTML = todayHtml || `<p class="hint cal-empty">Bugün için plan, randevu veya ödeme sözü yok.</p>`;
+
+  const eksikler = state.stages.find((s) => s.key === "eksikler");
+  const follow = [
+    { go: "list:group:kesif", label: "Keşif / teklif cevabı bekleyen", n: open.filter((j) => matchesFilter(j, "group:kesif")).length },
+    { go: "money:due", label: "Sözü geçmiş ödeme", n: debtors.filter((j) => j.reminder_at && j.reminder_at < today).length, warn: true },
+    { go: "list:waiting", label: "7 günden uzun bekleyen iş", n: open.filter((j) => matchesFilter(j, "waiting")).length, warn: true },
+    { go: eksikler ? `list:stage:${eksikler.id}` : "list:group:gaz", label: "Gaz açım eksiği olan", n: open.filter((j) => j.stage_key === "eksikler").length },
+    { go: "list:noprice", label: "Fiyatı girilmemiş açık iş", n: open.filter((j) => matchesFilter(j, "noprice")).length, warn: true },
+    { go: "list:nophone", label: "Telefonu eksik", n: open.filter((j) => matchesFilter(j, "nophone")).length, warn: true },
+  ];
+  el.homeFollow.innerHTML = follow.map((f) => `<li class="go" data-go="${f.go}">${escapeHtml(f.label)}<span class="meta${f.warn && f.n ? " warn" : ""}">${f.n}</span></li>`).join("");
+}
+
+function goTarget(target) {
+  if (target === "calendar") { state.calDay = todayStr(); const d = fromYmd(state.calDay); d.setDate(1); state.calMonth = d; openCalendar(); return; }
+  if (target.startsWith("money")) {
+    const mode = target.split(":")[1];
+    if (mode) { state.moneyMode = mode; localStorage.setItem(MONEY_MODE_KEY, mode); state.moneyStatus = "all"; localStorage.setItem(MONEY_STATUS_KEY, "all"); }
+    openMoney();
+    return;
+  }
+  if (target.startsWith("list:")) openList(target.slice(5));
 }
 
 function renderDetail() {
@@ -1781,12 +1934,16 @@ async function applySession(session) {
   state.member = member;
   el.staffName.textContent = member.display_name || state.user.email;
   el.stagesButton.hidden = member.role !== "admin";
+  el.navSettings.hidden = member.role !== "admin";
+  el.navStaff.textContent = member.display_name || state.user.email;
   el.authGate.hidden = true;
   el.app.hidden = false;
   el.loginPassword.value = "";
+  showView("home");
   try {
     await loadStages();
     await loadJobs();
+    renderHome();
     subscribeRealtime();
   } catch (error) {
     toast(friendlyError(error), true);
@@ -2015,6 +2172,27 @@ el.jobDialogCancel.addEventListener("click", () => closeSheets());
 el.overlay.addEventListener("click", () => closeSheets());
 
 el.stagesButton.addEventListener("click", () => { renderAdminLists(); openSheet(el.stagesDialog); });
+el.homeMenu.addEventListener("click", openNav);
+el.listMenu.addEventListener("click", openNav);
+el.navClose.addEventListener("click", () => closeSheets());
+el.sideNav.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-nav]");
+  if (item) navigate(item.dataset.nav, item.dataset.filter);
+});
+el.homeNewJob.addEventListener("click", () => el.newJobButton.click());
+el.homeTiles.addEventListener("click", (event) => {
+  const t = event.target.closest("[data-go]");
+  if (t) goTarget(t.dataset.go);
+});
+el.homeFollow.addEventListener("click", (event) => {
+  const t = event.target.closest("[data-go]");
+  if (t) goTarget(t.dataset.go);
+});
+el.homeToday.addEventListener("click", (event) => {
+  if (event.target.closest("[data-call]")) return;
+  const row = event.target.closest("[data-id]");
+  if (row) openDetail(row.dataset.id);
+});
 el.stagesClose.addEventListener("click", () => closeSheets());
 el.addQuoteItemButton.addEventListener("click", openQuotePicker);
 el.quotePickerClose.addEventListener("click", () => closeSheets());
