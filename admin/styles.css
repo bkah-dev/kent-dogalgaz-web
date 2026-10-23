@@ -317,7 +317,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
 .plain-list li .meta { color: var(--muted); font-size: .8rem; margin-left: auto; white-space: nowrap; }
 .plain-list li a { color: var(--navy); font-weight: 700; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plain-list li .kind { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(22,35,92,.08); color: var(--navy); flex: 0 0 auto; }
-.plain-list .del { border: 0; background: transparent; color: var(--red); font-size: 1.1rem; cursor: pointer; padding: 4px; }
+.plain-list .del { flex: 0 0 auto; min-height: 34px; padding: 4px 12px; border: 1px solid rgba(225,37,27,.4); border-radius: 8px; background: transparent; color: var(--red); font-weight: 700; font-size: .85rem; cursor: pointer; }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
 
 .kind-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .kind-chips .chip { min-height: 34px; padding: 4px 12px; font-size: .85rem; }

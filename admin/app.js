@@ -73,7 +73,7 @@ const el = Object.fromEntries([
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
   "secMsg", "messageButtons",
   "noteInput", "addNoteButton", "timeline", "cancelJobButton", "reopenJobButton",
-  "overlay", "jobDialog", "jobDialogTitle", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
+  "overlay", "jobDialog", "jobDialogTitle", "confirmDialog", "confirmTitle", "confirmText", "confirmCancel", "confirmOk", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
   "fStageWrap", "fStage", "jobDialogError", "jobDialogCancel", "jobDialogSave",
   "stagePicker", "stagePickerList", "stagePickerCancel",
   "stagesDialog", "stagesList", "checkItemsList", "stagesClose", "toast"
@@ -226,7 +226,7 @@ function activeJob() {
 }
 
 function allSheets() {
-  return [el.jobDialog, el.priceDialog, el.stagePicker, el.stagesDialog];
+  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.stagePicker, el.stagesDialog];
 }
 
 function anySheetOpen() {
@@ -251,6 +251,26 @@ function closeSheets() {
     state.popResolve = resolve;
     setTimeout(resolve, 400);
     history.back();
+  });
+}
+
+// Yerel "emin misiniz" penceresi (tarayıcının confirm() kutusu yerine; her telefonda aynı görünür).
+function askConfirm(text, okLabel = "Sil", title = "Emin misiniz?") {
+  el.confirmTitle.textContent = title;
+  el.confirmText.textContent = text;
+  el.confirmOk.textContent = okLabel;
+  openSheet(el.confirmDialog);
+  return new Promise((resolve) => {
+    const done = async (ok) => {
+      el.confirmOk.removeEventListener("click", onOk);
+      el.confirmCancel.removeEventListener("click", onCancel);
+      await closeSheets();
+      resolve(ok);
+    };
+    const onOk = () => done(true);
+    const onCancel = () => done(false);
+    el.confirmOk.addEventListener("click", onOk);
+    el.confirmCancel.addEventListener("click", onCancel);
   });
 }
 
@@ -830,7 +850,7 @@ function renderPayments() {
   el.paymentList.innerHTML = state.payments.map((p) => `
     <li><strong>${money.format(p.amount)}</strong><span class="kind">${escapeHtml(p.method)}</span>${p.note ? `<span>${escapeHtml(p.note)}</span>` : ""}
       <span class="meta">${dayFmt.format(new Date(p.paid_at + "T00:00"))}</span>
-      ${state.member?.role === "admin" ? `<button type="button" class="del" data-del-payment="${p.id}" title="Sil">✕</button>` : ""}
+      ${state.member?.role === "admin" ? `<button type="button" class="del" data-del-payment="${p.id}">Sil</button>` : ""}
     </li>`).join("");
 }
 
@@ -839,7 +859,7 @@ function renderFiles() {
     <li><span class="kind">${escapeHtml(KIND_LABELS[f.kind] || f.kind)}</span>
       <a href="#" data-open-file="${f.id}">${escapeHtml(f.name)}</a>
       <span class="meta">${dayShortFmt.format(new Date(f.created_at))}</span>
-      <button type="button" class="del" data-del-file="${f.id}" title="Sil">✕</button>
+      <button type="button" class="del" data-del-file="${f.id}">Sil</button>
     </li>`).join("");
 }
 
@@ -1086,12 +1106,13 @@ async function openFile(fileId) {
 
 async function deleteFile(fileId) {
   const f = state.files.find((x) => x.id === Number(fileId));
-  if (!f || !window.confirm(`"${f.name}" silinsin mi?`)) return;
+  if (!f) return;
+  if (!(await askConfirm(`${KIND_LABELS[f.kind] || f.kind}: "${f.name}" silinecek. Geri alınamaz.`, "Dosyayı sil"))) return;
   try {
-    const { error: sErr } = await db.storage.from(FILE_BUCKET).remove([f.path]);
-    if (sErr) throw sErr;
     const { error } = await db.from("job_files").delete().eq("id", f.id);
     if (error) throw error;
+    const { error: sErr } = await db.storage.from(FILE_BUCKET).remove([f.path]);
+    if (sErr) console.warn("storage remove", sErr);
     await db.from("job_events").insert({ job_id: state.activeJobId, kind: "file", note: `Dosya silindi: ${f.name}`, created_by: state.user.id });
     toast("Dosya silindi");
     await refreshDetail();
@@ -1368,7 +1389,8 @@ el.addPaymentButton.addEventListener("click", addPayment);
 el.payAmount.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); addPayment(); } });
 el.paymentList.addEventListener("click", async (event) => {
   const btn = event.target.closest("[data-del-payment]");
-  if (!btn || !window.confirm("Bu ödeme kaydı silinsin mi?")) return;
+  if (!btn) return;
+  if (!(await askConfirm("Bu ödeme kaydı silinecek. Kalan tutar yeniden hesaplanır.", "Ödemeyi sil"))) return;
   const { error } = await db.from("payments").delete().eq("id", Number(btn.dataset.delPayment));
   if (error) { toast(friendlyError(error), true); return; }
   toast("Ödeme silindi");
