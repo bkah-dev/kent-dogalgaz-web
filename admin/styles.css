@@ -357,6 +357,26 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
 .mr-name small { color: var(--muted); font-weight: 600; }
 .mr-sub { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mr-sub.due { color: var(--red); font-weight: 700; }
+.job-card .note-line { font-size: .82rem; color: #7a5a3a; }
+
+/* ---------- Aylık özet ---------- */
+.section-card { background: var(--paper); border-radius: var(--r); box-shadow: var(--shadow); padding: 12px 14px; }
+.card-title { margin: 0 0 8px; font-size: 1rem; font-weight: 800; }
+.sum-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.sum-table th, .sum-table td { padding: 7px 4px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.sum-table th:first-child, .sum-table td:first-child { text-align: left; }
+.sum-table th { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.sum-table tr.empty td { color: var(--muted); }
+.sum-table tfoot td { font-weight: 800; border-bottom: 0; border-top: 2px solid var(--line); }
+.pipeline { display: grid; gap: 6px; }
+.pipe-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; align-items: center; font-size: .88rem; }
+.pipe-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pipe-bar { height: 10px; border-radius: 999px; background: var(--cream); overflow: hidden; }
+.pipe-bar span { display: block; height: 100%; border-radius: 999px; min-width: 2px; }
+.pipe-n { font-weight: 800; min-width: 2ch; text-align: right; white-space: nowrap; }
+.pipe-n .warn { color: var(--red); font-weight: 700; }
+.hygiene .plain-list li .meta { font-weight: 800; color: var(--ink); font-size: .9rem; }
+.hygiene .plain-list li .meta.warn { color: var(--red); }
 .mr-kalan { flex: 0 0 auto; font-weight: 800; color: var(--red); white-space: nowrap; font-size: 1.02rem; }
 .mr-kalan.ok { color: var(--green); font-size: .9rem; }
 .mr-kalan.none { color: var(--muted); font-weight: 600; }

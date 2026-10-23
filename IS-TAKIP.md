@@ -40,7 +40,12 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - Müşteriye hazır WhatsApp mesajları (keşif takibi, sayaç al, randevu bilgisi, kalan ödeme). wa.me bağlantısı, uygulama göndermez, WhatsApp'ta açar.
 - Kalan ödemeler listesi (liste ekranında üstteki ₺ düğmesi): tüm işler tek listede, en çok kalanı olan üstte; üstte toplam fiyat / ödenen / kalan. İki filtre satırı: "Borcu olanlar / Sözü gelen / Ödemesi biten / Hepsi" ve "Açık işler / Biten işler / Açık + biten"; seçimler telefonda hatırlanır. Arama; toplamlar o an görünen işlere göre hesaplanır. Satırda 📞 arama ve 💬 "kalan ödeme" WhatsApp mesajı (tutar hazır yazılı). Sözü geçmiş hatırlatmalar kırmızı. ⇪ ile liste metin olarak paylaşılır (WhatsApp'a yapıştırmak için). Satıra dokununca işin detayı açılır, geri gelince liste kaldığı yerden devam eder.
 - Ana listede sıralama (aramanın yanındaki kutu): Son işlem / En uzun bekleyen / Kalan ödeme / İsim / Yeni açılan. Seçim hatırlanır.
-- Telefonun geri tuşu uygulama içinde çalışır: detaydan listeye, kalan listesinden ana listeye döner; uygulamayı kapatmaz.
+- Telefonun geri tuşu uygulama içinde çalışır: açık alt pencereyi kapatır, detaydan listeye, kalan listesi/özetten ana listeye döner; uygulamayı kapatmaz.
+- İlçe filtresi: birden fazla ilçe olunca ana listede ve kalan listesinde ilçe çipleri çıkar (sayılarıyla). Seçim iki ekranda ortak ve hatırlanır.
+- Aylık özet (📊): son 12 ay için yeni iş / gaz açılan / tamamlanan / tahsilat tablosu, bu ayın üç kutusu, açık işlerin aşama dağılımı (7+ gün bekleyenler kırmızı) ve "Şu an" sayıları (borçlu, sözü geçmiş, fiyatsız, telefonsuz). Excel'den aktarılan işler ve ödemeleri aylık sayımlara girmez.
+- Ödeme eklerken tarih seçilir (varsayılan bugün, ileri tarih kabul edilmez).
+- Yeni iş: ilçe son kullanılanla dolu gelir; telefon kaydederken `0532 111 22 33` biçimine çevrilir.
+- Kartta not satırı (Excel'den gelenlerde iş içeriği: dönüşüm, kolon vb.).
 
 ## Excel'den toplu aktarım (Soma iş listesi)
 

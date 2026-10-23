@@ -47,6 +47,7 @@
           <span id="staffName" class="topbar-user"></span>
         </div>
         <div class="topbar-actions">
+          <button id="summaryButton" class="icon-btn" type="button" title="Aylık özet">📊</button>
           <button id="moneyButton" class="icon-btn" type="button" title="Kalan ödemeler listesi">₺</button>
           <button id="stagesButton" class="icon-btn" type="button" title="Aşamalar" hidden>⚙</button>
           <button id="logoutButton" class="icon-btn" type="button" title="Çıkış">⎋</button>
@@ -64,6 +65,7 @@
         </select>
       </div>
       <div id="stageChips" class="chips" role="tablist"></div>
+      <div id="districtChips" class="chips chips-sub" role="tablist" hidden></div>
 
       <p id="syncStatus" class="sync"></p>
       <div id="jobList" class="job-list"></div>
@@ -99,11 +101,36 @@
         <button type="button" class="chip" data-status="closed">Biten işler</button>
         <button type="button" class="chip" data-status="all">Açık + biten</button>
       </div>
+      <div id="moneyDistrict" class="chips chips-sub" role="tablist" hidden></div>
 
       <div id="moneySummary" class="money-summary"></div>
       <p id="moneyCount" class="money-count"></p>
       <div id="moneyList" class="money-list"></div>
       <p id="moneyEmpty" class="empty" hidden>Kayıt yok.</p>
+    </section>
+
+    <!-- Aylık özet -->
+    <section id="summaryView" class="view" hidden>
+      <header class="topbar">
+        <button id="summaryBack" class="icon-btn" type="button" aria-label="Geri">‹</button>
+        <div class="topbar-brand">
+          <span class="topbar-title">Aylık özet</span>
+          <span class="topbar-user">Son 12 ay</span>
+        </div>
+      </header>
+      <div class="detail-body">
+        <div id="summaryNow" class="money-summary"></div>
+        <p id="summaryStatus" class="sync"></p>
+        <div class="section-card">
+          <table id="summaryTable" class="sum-table"></table>
+        </div>
+        <div class="section-card">
+          <h3 class="card-title">Açık işler aşamalara göre</h3>
+          <div id="summaryPipeline" class="pipeline"></div>
+        </div>
+        <div id="summaryHygiene" class="section-card hygiene"></div>
+        <p class="hint">Tahsilat ödeme tarihine göre sayılır. Excel'den aktarılan eski işler ve ödemeleri aylık sayımlara girmez.</p>
+      </div>
     </section>
 
     <!-- Detay -->
@@ -162,10 +189,13 @@
               <span>Kalan: <strong id="remainingTotal">0 ₺</strong></span>
             </div>
             <div class="row">
-              <input id="payAmount" type="number" inputmode="decimal" min="1" step="1" placeholder="Tutar">
+              <input id="payAmount" type="number" inputmode="decimal" min="1" step="1" placeholder="Tutar (₺)">
               <select id="payMethod">
                 <option>Nakit</option><option>Havale</option><option>Kart</option><option>Diğer</option>
               </select>
+            </div>
+            <div class="row">
+              <input id="payDate" type="date" title="Ödeme tarihi">
               <button id="addPaymentButton" class="btn btn-outline" type="button">Ödeme ekle</button>
             </div>
             <ul id="paymentList" class="plain-list"></ul>

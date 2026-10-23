@@ -3,6 +3,9 @@ const FILTER_KEY = "kent-is-filter";
 const SORT_KEY = "kent-is-sort";
 const MONEY_MODE_KEY = "kent-para-mod";
 const MONEY_STATUS_KEY = "kent-para-durum";
+const DISTRICT_KEY = "kent-ilce";
+const LAST_DISTRICT_KEY = "kent-son-ilce";
+const EXCEL_TAG = "[Excel #";
 const WARN_DAYS = 7;
 const FILE_BUCKET = "job-files";
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -43,6 +46,9 @@ const state = {
   moneyMode: localStorage.getItem(MONEY_MODE_KEY) || "debt",
   moneyStatus: localStorage.getItem(MONEY_STATUS_KEY) || "open",
   moneySearch: "",
+  district: localStorage.getItem(DISTRICT_KEY) || "all",
+  summary: null,
+  skipPop: false,
   activeJobId: null,
   editingJobId: null,
   fileKind: "sozlesme",
@@ -53,14 +59,15 @@ const state = {
 const el = Object.fromEntries([
   "authGate", "loginForm", "loginUsername", "loginPassword", "loginError", "loginButton",
   "app", "listView", "detailView", "staffName", "stagesButton", "logoutButton",
-  "searchInput", "sortSelect", "stageChips", "syncStatus", "jobList", "emptyState", "newJobButton",
-  "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneyStatus", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
+  "searchInput", "sortSelect", "stageChips", "districtChips", "syncStatus", "jobList", "emptyState", "newJobButton",
+  "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneyStatus", "moneyDistrict", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
+  "summaryButton", "summaryView", "summaryBack", "summaryNow", "summaryStatus", "summaryTable", "summaryPipeline", "summaryHygiene",
   "backButton", "detailTitle", "detailNo", "editJobButton", "callLink", "waLink", "mapLink",
   "detailAddress", "detailNote", "alertStrip", "stageCard", "stageName", "stageSince", "statusBanner",
   "nextStageButton", "pickStageButton",
   "secChecks", "checksSummary", "checklist",
   "secPay", "paySummary", "priceInput", "savePriceButton", "paidTotal", "remainingTotal",
-  "payAmount", "payMethod", "addPaymentButton", "paymentList", "reminderInput", "reminderNote", "saveReminderButton",
+  "payAmount", "payMethod", "payDate", "addPaymentButton", "paymentList", "reminderInput", "reminderNote", "saveReminderButton",
   "secFiles", "filesSummary", "fileKinds", "cameraInput", "fileInput", "uploadStatus", "fileList",
   "secDates", "datesSummary", "plannedInput", "savePlannedButton", "appointmentInput", "saveAppointmentButton",
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
@@ -80,6 +87,7 @@ const dateFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-dig
 const shortDateFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 const dayFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 const dayShortFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" });
+const monthFmt = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" });
 const numberFmt = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 const money = { format: (n) => numberFmt.format(Number(n) || 0) + " ₺" };
 
@@ -126,6 +134,26 @@ function phoneDigits(phone) {
   if (d.startsWith("90") && d.length === 12) d = d.slice(2);
   if (d.startsWith("0") && d.length === 11) d = d.slice(1);
   return d;
+}
+
+// "5321112233" / "05321112233" / "+905321112233" → "0532 111 22 33"; tanınmazsa olduğu gibi bırakır.
+function prettyPhone(phone) {
+  const d = phoneDigits(phone);
+  if (d.length !== 10 || !d.startsWith("5")) return (phone || "").trim();
+  return `0${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6, 8)} ${d.slice(8)}`;
+}
+
+function isExcelImport(job) {
+  return (job.note || "").includes(EXCEL_TAG);
+}
+
+function districtOf(job) {
+  return (job.district || "").trim() || "Belirsiz";
+}
+
+function monthKey(dateLike) {
+  const d = typeof dateLike === "string" && dateLike.length === 10 ? new Date(dateLike + "T00:00") : new Date(dateLike);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function phoneHref(phone) {
@@ -197,14 +225,29 @@ function activeJob() {
   return state.jobs.find((j) => j.id === state.activeJobId) || null;
 }
 
+function anySheetOpen() {
+  return [el.jobDialog, el.stagePicker, el.stagesDialog].some((s) => !s.hidden);
+}
+
+// Alt pencere açılınca geçmişe bir adım eklenir; telefonun geri tuşu önce pencereyi kapatır.
 function openSheet(sheet) {
+  if (!anySheetOpen()) history.pushState({ ...(history.state || {}), sheet: true }, "");
   el.overlay.hidden = false;
   sheet.hidden = false;
 }
 
+// Pencereyi kapatır ve eklenen geçmiş adımını geri alır; geri alma bitince çözülür (sonrasında pushState güvenli).
 function closeSheets() {
+  const wasOpen = anySheetOpen();
   el.overlay.hidden = true;
   [el.jobDialog, el.stagePicker, el.stagesDialog].forEach((s) => { s.hidden = true; });
+  if (!(wasOpen && history.state?.sheet)) return Promise.resolve();
+  state.skipPop = true;
+  return new Promise((resolve) => {
+    state.popResolve = resolve;
+    setTimeout(resolve, 400);
+    history.back();
+  });
 }
 
 async function rpc(name, params) {
@@ -288,6 +331,7 @@ function isTodayJob(job) {
 function filteredJobs() {
   const q = normalizeText(state.search.trim());
   return state.jobs.filter((job) => {
+    if (state.district !== "all" && districtOf(job) !== state.district) return false;
     if (state.filter === "open" && job.status !== "open") return false;
     if (state.filter === "closed" && job.status === "open") return false;
     if (state.filter === "today" && !isTodayJob(job)) return false;
@@ -313,7 +357,25 @@ function jobComparator(sort) {
   }
 }
 
+// İlçe çipleri: birden fazla ilçe varsa görünür; seçim ana liste ve kalan listesi için ortaktır.
+function renderDistrictChips() {
+  const counts = new Map();
+  state.jobs.filter((j) => j.status !== "cancelled").forEach((j) => counts.set(districtOf(j), (counts.get(districtOf(j)) || 0) + 1));
+  const districts = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"));
+  const show = districts.length > 1;
+  if (!show || !districts.some(([d]) => d === state.district)) {
+    if (state.district !== "all") { state.district = "all"; localStorage.setItem(DISTRICT_KEY, "all"); }
+  }
+  const html = show
+    ? [["all", "Tüm ilçeler", state.jobs.filter((j) => j.status !== "cancelled").length], ...districts.map(([d, n]) => [d, d, n])]
+      .map(([key, label, count]) => `<button type="button" class="chip${state.district === key ? " active" : ""}" data-district="${escapeHtml(key)}">${escapeHtml(label || key)}<span class="count">${count}</span></button>`)
+      .join("")
+    : "";
+  [el.districtChips, el.moneyDistrict].forEach((box) => { box.innerHTML = html; box.hidden = !show; });
+}
+
 function renderChips() {
+  renderDistrictChips();
   const open = state.jobs.filter((j) => j.status === "open");
   const closed = state.jobs.length - open.length;
   const chips = [
@@ -347,10 +409,12 @@ function renderList() {
     if (Number(job.remaining) > 0 && job.status !== "cancelled") badges.push(`<span class="days warn">💰 ${money.format(job.remaining)}</span>`);
     if (job.reminder_at && job.status === "open") badges.push(`<span class="days${isDueDate(job.reminder_at) ? " warn" : ""}">🔔 ${dayShortFmt.format(new Date(job.reminder_at + "T00:00"))}</span>`);
     const tel = phoneHref(job.phone);
+    const noteLine = (job.note || "").replace(/\s*·?\s*\[Excel #\d+\]/, "").trim();
     return `
       <article class="job-card ${job.status}" data-id="${job.id}" style="border-left-color:${escapeHtml(job.stage_color)}">
         <div class="name">${escapeHtml(job.customer_name)} <small style="color:var(--muted);font-weight:600">#${job.job_no}</small></div>
         <div class="sub">${escapeHtml(sub)}</div>
+        ${noteLine ? `<div class="sub note-line">${escapeHtml(noteLine)}</div>` : ""}
         <div class="meta">
           <span class="badge" style="background:${escapeHtml(job.stage_color)}">${escapeHtml(job.status === "cancelled" ? "İptal" : job.stage_short_name || job.stage_name)}</span>
           <span class="days${warn ? " warn" : ""}">${daysLabel(job.stage_changed_at)}</span>
@@ -369,6 +433,7 @@ function moneyJobs() {
   return state.jobs
     .filter((job) => {
       if (job.status === "cancelled") return false;
+      if (state.district !== "all" && districtOf(job) !== state.district) return false;
       if (state.moneyStatus === "open" && job.status !== "open") return false;
       if (state.moneyStatus === "closed" && job.status !== "closed") return false;
       const remaining = Number(job.remaining) || 0;
@@ -437,18 +502,134 @@ function renderMoney() {
   }).join("");
 }
 
+function showView(view) {
+  el.listView.hidden = view !== "list";
+  el.moneyView.hidden = view !== "money";
+  el.summaryView.hidden = view !== "summary";
+  el.detailView.hidden = view !== "detail";
+  window.scrollTo(0, 0);
+}
+
+function currentView() {
+  if (!el.detailView.hidden) return "detail";
+  if (!el.moneyView.hidden) return "money";
+  if (!el.summaryView.hidden) return "summary";
+  return "list";
+}
+
 function openMoney(pushHistory = true) {
   if (pushHistory) history.pushState({ view: "money" }, "");
-  el.listView.hidden = true;
-  el.detailView.hidden = true;
-  el.moneyView.hidden = false;
-  window.scrollTo(0, 0);
+  showView("money");
   renderMoney();
 }
 
 function closeMoney() {
-  el.moneyView.hidden = true;
-  el.listView.hidden = false;
+  showView("list");
+}
+
+// ---------------------------------------------------------------------------
+// Aylık özet: yeni iş, gaz açılan, tamamlanan, tahsilat (son 12 ay) + şu anki tablo
+// ---------------------------------------------------------------------------
+function monthsBack(n) {
+  const out = [];
+  const d = new Date(); d.setDate(1);
+  for (let i = 0; i < n; i++) {
+    out.push(monthKey(d));
+    d.setMonth(d.getMonth() - 1);
+  }
+  return out;
+}
+
+async function loadSummary() {
+  const since = new Date(); since.setDate(1); since.setMonth(since.getMonth() - 11); since.setHours(0, 0, 0, 0);
+  const sinceDay = `${since.getFullYear()}-${String(since.getMonth() + 1).padStart(2, "0")}-01`;
+  const [pay, ev] = await Promise.all([
+    db.from("payments").select("amount,paid_at,note").gte("paid_at", sinceDay).limit(5000),
+    db.from("job_events").select("to_stage_id,created_at,job_id").eq("kind", "stage").gte("created_at", since.toISOString()).limit(5000),
+  ]);
+  if (pay.error) throw pay.error;
+  if (ev.error) throw ev.error;
+  state.summary = { payments: pay.data || [], events: ev.data || [] };
+}
+
+function renderSummary() {
+  const months = monthsBack(12);
+  const rows = Object.fromEntries(months.map((m) => [m, { created: 0, gas: 0, done: 0, cash: 0 }]));
+  const gasId = state.stages.find((s) => s.key === "gaz")?.id;
+  const doneId = state.stages.find((s) => s.is_terminal && s.is_active)?.id;
+  const importedIds = new Set(state.jobs.filter(isExcelImport).map((j) => j.id));
+
+  state.jobs.filter((j) => !isExcelImport(j)).forEach((j) => { const k = monthKey(j.created_at); if (rows[k]) rows[k].created += 1; });
+  (state.summary?.events || []).forEach((e) => {
+    const k = monthKey(e.created_at);
+    if (!rows[k]) return;
+    if (e.to_stage_id === gasId) rows[k].gas += 1;
+    if (e.to_stage_id === doneId) rows[k].done += 1;
+  });
+  (state.summary?.payments || []).forEach((p) => {
+    if ((p.note || "").startsWith("Excel aktarımı")) return;
+    const k = monthKey(p.paid_at);
+    if (rows[k]) rows[k].cash += Number(p.amount) || 0;
+  });
+
+  const now = rows[months[0]];
+  el.summaryNow.innerHTML = `
+    <div class="money-tile"><span>Bu ay yeni iş</span><strong>${now.created}</strong></div>
+    <div class="money-tile"><span>Bu ay gaz açılan</span><strong>${now.gas}</strong></div>
+    <div class="money-tile kalan"><span>Bu ay tahsilat</span><strong>${escapeHtml(money.format(now.cash))}</strong></div>`;
+
+  el.summaryTable.innerHTML = `
+    <thead><tr><th>Ay</th><th>Yeni</th><th>Gaz</th><th>Bitti</th><th>Tahsilat</th></tr></thead>
+    <tbody>${months.map((m) => {
+      const r = rows[m];
+      const label = monthFmt.format(new Date(m + "-01T00:00"));
+      const empty = !r.created && !r.gas && !r.done && !r.cash;
+      return `<tr class="${empty ? "empty" : ""}"><td>${escapeHtml(label)}</td><td>${r.created || "–"}</td><td>${r.gas || "–"}</td><td>${r.done || "–"}</td><td>${r.cash ? escapeHtml(money.format(r.cash)) : "–"}</td></tr>`;
+    }).join("")}</tbody>
+    <tfoot><tr><td>12 ay</td><td>${months.reduce((s, m) => s + rows[m].created, 0)}</td><td>${months.reduce((s, m) => s + rows[m].gas, 0)}</td><td>${months.reduce((s, m) => s + rows[m].done, 0)}</td><td>${escapeHtml(money.format(months.reduce((s, m) => s + rows[m].cash, 0)))}</td></tr></tfoot>`;
+
+  const open = state.jobs.filter((j) => j.status === "open");
+  const max = Math.max(1, ...activeStages().map((s) => open.filter((j) => j.stage_id === s.id).length));
+  el.summaryPipeline.innerHTML = activeStages().filter((s) => !s.is_terminal).map((s) => {
+    const n = open.filter((j) => j.stage_id === s.id).length;
+    const stale = open.filter((j) => j.stage_id === s.id && daysSince(j.stage_changed_at) >= WARN_DAYS).length;
+    return `<div class="pipe-row">
+      <span class="pipe-name">${escapeHtml(s.short_name || s.name)}</span>
+      <span class="pipe-bar"><span style="width:${Math.round((n / max) * 100)}%;background:${escapeHtml(s.color)}"></span></span>
+      <span class="pipe-n">${n}${stale ? `<small class="warn"> · ${stale} bekliyor</small>` : ""}</span>
+    </div>`;
+  }).join("");
+
+  const noPrice = open.filter((j) => !(Number(j.price) > 0)).length;
+  const noPhone = open.filter((j) => phoneDigits(j.phone).length !== 10).length;
+  const debt = state.jobs.filter((j) => j.status !== "cancelled" && Number(j.remaining) > 0);
+  const overdue = debt.filter((j) => isDueDate(j.reminder_at)).length;
+  const stale = open.filter((j) => !j.stage_is_terminal && daysSince(j.stage_changed_at) >= WARN_DAYS).length;
+  el.summaryHygiene.innerHTML = `
+    <h3 class="card-title">Şu an</h3>
+    <ul class="plain-list">
+      <li>Açık iş <span class="meta">${open.length}</span></li>
+      <li>Borcu olan iş <span class="meta">${debt.length} · ${escapeHtml(money.format(debt.reduce((s, j) => s + (Number(j.remaining) || 0), 0)))}</span></li>
+      <li>Ödeme sözü geçmiş <span class="meta${overdue ? " warn" : ""}">${overdue}</span></li>
+      <li>${WARN_DAYS} günden uzun aynı aşamada <span class="meta${stale ? " warn" : ""}">${stale}</span></li>
+      <li>Fiyatı girilmemiş açık iş <span class="meta${noPrice ? " warn" : ""}">${noPrice}</span></li>
+      <li>Telefonu eksik açık iş <span class="meta${noPhone ? " warn" : ""}">${noPhone}</span></li>
+    </ul>
+    ${importedIds.size ? `<p class="hint">${importedIds.size} iş Excel'den aktarıldı; aylık sayımlara girmez, "Şu an" bölümüne girer.</p>` : ""}`;
+}
+
+async function openSummary(pushHistory = true) {
+  if (pushHistory) history.pushState({ view: "summary" }, "");
+  showView("summary");
+  el.summaryStatus.textContent = "Yükleniyor…";
+  renderSummary();
+  try {
+    await loadSummary();
+    el.summaryStatus.textContent = "";
+    renderSummary();
+  } catch (error) {
+    el.summaryStatus.textContent = "Özet alınamadı: " + friendlyError(error);
+  }
 }
 
 function moneyShareText() {
@@ -482,13 +663,10 @@ async function shareMoney() {
 async function openDetail(jobId, pushHistory = true) {
   state.activeJobId = jobId;
   if (pushHistory) {
-    state.returnView = el.moneyView.hidden ? "list" : "money";
+    state.returnView = currentView() === "money" ? "money" : "list";
     history.pushState({ view: "detail", id: jobId, from: state.returnView }, "");
   }
-  el.listView.hidden = true;
-  el.moneyView.hidden = true;
-  el.detailView.hidden = false;
-  window.scrollTo(0, 0);
+  showView("detail");
   state.events = []; state.checks = []; state.payments = []; state.files = [];
   renderDetail();
   renderExtras();
@@ -502,31 +680,39 @@ async function openDetail(jobId, pushHistory = true) {
 
 function closeDetail() {
   state.activeJobId = null;
-  el.detailView.hidden = true;
-  if (state.returnView === "money") { el.moneyView.hidden = false; renderMoney(); }
-  else el.listView.hidden = false;
+  if (state.returnView === "money") { showView("money"); renderMoney(); }
+  else showView("list");
 }
 
-// Telefonun geri tuşu: detay → liste/kalan listesi, kalan listesi → liste. Açık alt sayfa varsa önce onu kapatır.
+// Telefonun geri tuşu: alt pencere → kapat; detay → liste/kalan listesi; kalan listesi/özet → liste.
 function goBack() {
+  if (anySheetOpen()) { closeSheets(); return; }
   if (history.state?.view) history.back();
-  else if (!el.detailView.hidden) closeDetail();
-  else if (!el.moneyView.hidden) closeMoney();
+  else if (currentView() === "detail") closeDetail();
+  else showView("list");
 }
 
 function applyHistoryState(s) {
-  closeSheets();
+  if (state.skipPop) { state.skipPop = false; state.popResolve?.(); state.popResolve = null; return; }
+  if (anySheetOpen()) {
+    el.overlay.hidden = true;
+    [el.jobDialog, el.stagePicker, el.stagesDialog].forEach((x) => { x.hidden = true; });
+    const sameView = (s?.view || "list") === currentView() && (s?.view !== "detail" || s.id === state.activeJobId);
+    if (sameView) return; // sadece pencere kapandı, görünüm aynı
+  }
+  if (s?.sheet) { history.back(); return; } // ileri tuşuyla pencere durumuna gelindi: atla
   if (s?.view === "detail" && state.jobs.some((j) => j.id === s.id)) {
     state.returnView = s.from === "money" ? "money" : "list";
     openDetail(s.id, false);
   } else if (s?.view === "money") {
     state.activeJobId = null;
     openMoney(false);
+  } else if (s?.view === "summary") {
+    state.activeJobId = null;
+    openSummary(false);
   } else {
     state.activeJobId = null;
-    el.detailView.hidden = true;
-    el.moneyView.hidden = true;
-    el.listView.hidden = false;
+    showView("list");
   }
 }
 
@@ -586,6 +772,7 @@ function renderDetail() {
   el.paySummary.className = "section-meta" + (Number(job.remaining) > 0 ? " warn" : Number(job.price) > 0 ? " ok" : "");
   el.reminderInput.value = job.reminder_at || "";
   el.reminderNote.value = job.reminder_note || "";
+  if (!el.payDate.value) el.payDate.value = todayStr();
 
   // Tarihler
   el.plannedInput.value = job.planned_at || "";
@@ -747,8 +934,11 @@ async function addPayment() {
   if (!(amount > 0)) { toast("Tutar girin", true); return; }
   el.addPaymentButton.disabled = true;
   try {
-    await rpc("add_payment", { p_job_id: state.activeJobId, p_amount: amount, p_method: el.payMethod.value, p_note: "", p_paid_at: todayStr() });
+    const paidAt = el.payDate.value || todayStr();
+    if (paidAt > todayStr()) { toast("Ödeme tarihi ileri bir gün olamaz", true); el.addPaymentButton.disabled = false; return; }
+    await rpc("add_payment", { p_job_id: state.activeJobId, p_amount: amount, p_method: el.payMethod.value, p_note: "", p_paid_at: paidAt });
     el.payAmount.value = "";
+    el.payDate.value = todayStr();
     toast("Ödeme eklendi");
     await refreshDetail();
   } catch (error) {
@@ -843,7 +1033,7 @@ function openJobDialog(job = null) {
   el.jobDialogTitle.textContent = job ? "İşi düzenle" : "Yeni iş";
   el.fName.value = job?.customer_name || "";
   el.fPhone.value = job?.phone || "";
-  el.fDistrict.value = job?.district || "";
+  el.fDistrict.value = job ? (job.district || "") : (localStorage.getItem(LAST_DISTRICT_KEY) || "Soma");
   el.fAddress.value = job?.address || "";
   el.fNote.value = job?.note || "";
   el.jobDialogError.textContent = "";
@@ -861,11 +1051,12 @@ async function saveJobDialog(event) {
   el.jobDialogError.textContent = "";
   const payload = {
     p_customer_name: el.fName.value.trim(),
-    p_phone: el.fPhone.value.trim(),
+    p_phone: prettyPhone(el.fPhone.value),
     p_address: el.fAddress.value.trim(),
     p_district: el.fDistrict.value.trim(),
     p_note: el.fNote.value.trim(),
   };
+  if (payload.p_district) localStorage.setItem(LAST_DISTRICT_KEY, payload.p_district);
   try {
     if (state.editingJobId) {
       await rpc("update_job_info", { p_job_id: state.editingJobId, ...payload });
@@ -875,7 +1066,7 @@ async function saveJobDialog(event) {
     } else {
       const id = await rpc("create_job", { ...payload, p_stage_id: Number(el.fStage.value) });
       toast("İş açıldı");
-      closeSheets();
+      await closeSheets();
       await loadJobs();
       if (id) openDetail(id);
     }
@@ -1059,6 +1250,17 @@ el.moneyList.addEventListener("click", (event) => {
   const row = event.target.closest("[data-id]");
   if (row) openDetail(row.dataset.id);
 });
+[el.districtChips, el.moneyDistrict].forEach((box) => box.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-district]");
+  if (!chip) return;
+  state.district = chip.dataset.district;
+  localStorage.setItem(DISTRICT_KEY, state.district);
+  renderChips();
+  renderList();
+  if (!el.moneyView.hidden) renderMoney();
+}));
+el.summaryButton.addEventListener("click", () => openSummary());
+el.summaryBack.addEventListener("click", goBack);
 
 window.addEventListener("popstate", (event) => { if (state.user) applyHistoryState(event.state); });
 history.replaceState(null, "");
@@ -1073,7 +1275,7 @@ el.stagePickerList.addEventListener("click", (event) => {
   closeSheets();
   changeStage(Number(opt.dataset.stage));
 });
-el.stagePickerCancel.addEventListener("click", closeSheets);
+el.stagePickerCancel.addEventListener("click", () => closeSheets());
 
 el.checklist.addEventListener("click", (event) => {
   const row = event.target.closest("[data-item]");
@@ -1177,11 +1379,11 @@ el.reopenJobButton.addEventListener("click", async () => {
 });
 
 el.jobDialog.addEventListener("submit", saveJobDialog);
-el.jobDialogCancel.addEventListener("click", closeSheets);
-el.overlay.addEventListener("click", closeSheets);
+el.jobDialogCancel.addEventListener("click", () => closeSheets());
+el.overlay.addEventListener("click", () => closeSheets());
 
 el.stagesButton.addEventListener("click", () => { renderAdminLists(); openSheet(el.stagesDialog); });
-el.stagesClose.addEventListener("click", closeSheets);
+el.stagesClose.addEventListener("click", () => closeSheets());
 el.stagesList.addEventListener("click", handleAdminClick);
 el.stagesList.addEventListener("change", handleAdminRename);
 el.checkItemsList.addEventListener("click", handleAdminClick);
