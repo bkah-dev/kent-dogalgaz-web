@@ -320,6 +320,23 @@
     </div>
   </form>
 
+  <!-- Fiyat değiştirme (kilitli fiyat) -->
+  <form id="priceDialog" class="sheet" novalidate hidden>
+    <h2>Fiyatı değiştir</h2>
+    <p class="hint">Mevcut fiyat: <strong id="priceDialogOld">0 ₺</strong>. Değişiklik ve sebebi iş geçmişine yazılır.</p>
+    <label>Yeni fiyat (₺) *
+      <input id="priceDialogNew" type="number" inputmode="decimal" min="1" step="1" required>
+    </label>
+    <label>Sebep *
+      <textarea id="priceDialogReason" rows="2" maxlength="300" required placeholder="örn. kolon hattı eklendi, pazarlık, yanlış girilmişti"></textarea>
+    </label>
+    <p id="priceDialogError" class="error" role="alert"></p>
+    <div class="sheet-actions">
+      <button type="button" id="priceDialogCancel" class="btn btn-outline">Vazgeç</button>
+      <button type="submit" id="priceDialogSave" class="btn btn-primary">Fiyatı değiştir</button>
+    </div>
+  </form>
+
   <!-- Aşama seçici -->
   <div id="stagePicker" class="sheet" hidden>
     <h2>Aşama seç</h2>

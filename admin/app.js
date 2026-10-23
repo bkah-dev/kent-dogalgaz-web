@@ -73,7 +73,7 @@ const el = Object.fromEntries([
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
   "secMsg", "messageButtons",
   "noteInput", "addNoteButton", "timeline", "cancelJobButton", "reopenJobButton",
-  "overlay", "jobDialog", "jobDialogTitle", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
+  "overlay", "jobDialog", "jobDialogTitle", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
   "fStageWrap", "fStage", "jobDialogError", "jobDialogCancel", "jobDialogSave",
   "stagePicker", "stagePickerList", "stagePickerCancel",
   "stagesDialog", "stagesList", "checkItemsList", "stagesClose", "toast"
@@ -225,8 +225,12 @@ function activeJob() {
   return state.jobs.find((j) => j.id === state.activeJobId) || null;
 }
 
+function allSheets() {
+  return [el.jobDialog, el.priceDialog, el.stagePicker, el.stagesDialog];
+}
+
 function anySheetOpen() {
-  return [el.jobDialog, el.stagePicker, el.stagesDialog].some((s) => !s.hidden);
+  return allSheets().some((s) => !s.hidden);
 }
 
 // Alt pencere açılınca geçmişe bir adım eklenir; telefonun geri tuşu önce pencereyi kapatır.
@@ -240,7 +244,7 @@ function openSheet(sheet) {
 function closeSheets() {
   const wasOpen = anySheetOpen();
   el.overlay.hidden = true;
-  [el.jobDialog, el.stagePicker, el.stagesDialog].forEach((s) => { s.hidden = true; });
+  allSheets().forEach((s) => { s.hidden = true; });
   if (!(wasOpen && history.state?.sheet)) return Promise.resolve();
   state.skipPop = true;
   return new Promise((resolve) => {
@@ -696,7 +700,7 @@ function applyHistoryState(s) {
   if (state.skipPop) { state.skipPop = false; state.popResolve?.(); state.popResolve = null; return; }
   if (anySheetOpen()) {
     el.overlay.hidden = true;
-    [el.jobDialog, el.stagePicker, el.stagesDialog].forEach((x) => { x.hidden = true; });
+    allSheets().forEach((x) => { x.hidden = true; });
     const sameView = (s?.view || "list") === currentView() && (s?.view !== "detail" || s.id === state.activeJobId);
     if (sameView) return; // sadece pencere kapandı, görünüm aynı
   }
@@ -764,7 +768,10 @@ function renderDetail() {
   el.reopenJobButton.hidden = isOpen;
 
   // Ödeme
-  el.priceInput.value = Number(job.price) > 0 ? String(Number(job.price)) : "";
+  const priceLocked = Number(job.price) > 0;
+  el.priceInput.value = priceLocked ? String(Number(job.price)) : "";
+  el.priceInput.disabled = priceLocked;
+  el.savePriceButton.textContent = priceLocked ? "🔒 Değiştir" : "Kaydet";
   el.paidTotal.textContent = money.format(job.paid_total || 0);
   el.remainingTotal.textContent = money.format(job.remaining || 0);
   el.remainingTotal.style.color = Number(job.remaining) > 0 ? "var(--red)" : "var(--green)";
@@ -909,6 +916,42 @@ async function autoTickForKind(kind) {
 // ---------------------------------------------------------------------------
 // Ödeme ve plan
 // ---------------------------------------------------------------------------
+// Fiyat bir kez girildikten sonra kilitlenir; değişiklik sebep ister ve geçmişe yazılır.
+function openPriceDialog() {
+  const job = activeJob();
+  if (!job) return;
+  el.priceDialogOld.textContent = money.format(job.price);
+  el.priceDialogNew.value = "";
+  el.priceDialogReason.value = "";
+  el.priceDialogError.textContent = "";
+  openSheet(el.priceDialog);
+  el.priceDialogNew.focus();
+}
+
+async function savePriceDialog(event) {
+  event.preventDefault();
+  const job = activeJob();
+  if (!job) return;
+  const oldPrice = Number(job.price) || 0;
+  const newPrice = Number(el.priceDialogNew.value);
+  const reason = el.priceDialogReason.value.trim();
+  if (!(newPrice > 0)) { el.priceDialogError.textContent = "Yeni fiyatı yazın."; return; }
+  if (newPrice === oldPrice) { el.priceDialogError.textContent = "Fiyat zaten bu."; return; }
+  if (reason.length < 3) { el.priceDialogError.textContent = "Sebep yazmadan fiyat değiştirilemez."; return; }
+  el.priceDialogSave.disabled = true;
+  try {
+    await rpc("set_job_plan", { p_job_id: job.id, p_price: newPrice, p_planned_at: job.planned_at || null, p_reminder_at: job.reminder_at || null, p_reminder_note: job.reminder_note || "" });
+    await db.from("job_events").insert({ job_id: job.id, kind: "note", note: `Fiyat değişti: ${money.format(oldPrice)} → ${money.format(newPrice)}. Sebep: ${reason}`, created_by: state.user.id });
+    await closeSheets();
+    toast("Fiyat değiştirildi");
+    await refreshDetail();
+  } catch (error) {
+    el.priceDialogError.textContent = friendlyError(error);
+  } finally {
+    el.priceDialogSave.disabled = false;
+  }
+}
+
 async function savePlan(patch) {
   const job = activeJob();
   if (!job) return;
@@ -1314,7 +1357,13 @@ el.checklist.addEventListener("click", (event) => {
   if (row) toggleCheck(Number(row.dataset.item));
 });
 
-el.savePriceButton.addEventListener("click", () => savePlan({ p_price: Number(el.priceInput.value) || 0 }));
+el.savePriceButton.addEventListener("click", () => {
+  if (Number(activeJob()?.price) > 0) openPriceDialog();
+  else savePlan({ p_price: Number(el.priceInput.value) || 0 });
+});
+el.priceDialog.addEventListener("submit", savePriceDialog);
+el.priceDialogCancel.addEventListener("click", () => closeSheets());
+[el.priceDialogNew, el.priceDialogReason].forEach((i) => i.addEventListener("input", () => { el.priceDialogError.textContent = ""; }));
 el.addPaymentButton.addEventListener("click", addPayment);
 el.payAmount.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); addPayment(); } });
 el.paymentList.addEventListener("click", async (event) => {

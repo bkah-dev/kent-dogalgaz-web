@@ -386,3 +386,4 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
   background: rgba(22, 35, 92, .08); color: var(--navy); font-size: 1.05rem;
 }
 .mr-act:active { background: rgba(22, 35, 92, .16); }
+input:disabled { background: var(--cream); color: var(--muted); -webkit-text-fill-color: var(--muted); opacity: 1; }
