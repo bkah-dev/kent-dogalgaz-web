@@ -420,3 +420,4 @@ input:disabled { background: var(--cream); color: var(--muted); -webkit-text-fil
   .cal-cell { min-height: 96px; }
   .cal-chip { font-size: .74rem; }
 }
+.cal-note { font-size: .82rem; color: var(--ink); font-weight: 600; white-space: normal; }

@@ -46,7 +46,7 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - Ödeme eklerken tarih seçilir (varsayılan bugün; geçmiş veya ileri tarih serbest, vadeli çek/senet için ileri tarih girilebilir).
 - Yeni iş: ilçe son kullanılanla dolu gelir; telefon kaydederken `0532 111 22 33` biçimine çevrilir.
 - Kartta not satırı (Excel'den gelenlerde iş içeriği: dönüşüm, kolon vb.).
-- Takvim (📅): aylık ızgara, montaj planı olan işler günün içinde isimle (usta yazılmamışsa kırmızı), Aksa randevusu 🔥 ile. Güne dokununca altta o günün listesi: montajlar (usta rozeti) ve Aksa randevuları (saat); satırda 📞 ve 💬 (montaj için "şu gün geliyoruz, alanı boşaltın" mesajı, randevu için randevu mesajı), satıra dokununca iş detayı. "+ İş ekle": usta yaz, açık işlerden seç, o güne planlanır (usta son kullanılanla dolu gelir). ⇪ seçili günün haftasını metin olarak kopyalar (gün gün iş · adres · usta, Aksa randevuları), personel grubuna yapıştırmak için. Detayda "Plan & Aksa randevusu" altında usta alanı; "Montaj günü bilgisi" WhatsApp şablonu plan tarihi + ustayı otomatik yazar.
+- Takvim (📅): aylık ızgara, montaj planı olan işler günün içinde isimle (usta yazılmamışsa kırmızı), Aksa randevusu 🔥 ile. Güne dokununca altta o günün listesi: montajlar (usta rozeti) ve Aksa randevuları (saat); satırda 📞 ve 💬 (montaj için "şu gün geliyoruz, alanı boşaltın" mesajı, randevu için randevu mesajı), satıra dokununca iş detayı. "+ İş ekle": usta yaz, açık işlerden seç, o güne planlanır (usta son kullanılanla dolu gelir). ⇪ seçili günün haftasını metin olarak kopyalar (gün gün iş · adres · usta, Aksa randevuları), personel grubuna yapıştırmak için. Detayda "İş günü" bölümünde tarih + usta + not (örn. "3 kolon, 2. kat, etrafı toparlasınlar"; takvimde ve haftalık metinde görünür). Aksa gaz açma randevusu ayrı bölümde, yalnızca proje onayından sonraki aşamalarda ya da randevu girilmişse görünür; "Montaj günü bilgisi" WhatsApp şablonu plan tarihi + ustayı otomatik yazar.
 
 ## Excel'den toplu aktarım (Soma iş listesi)
 
@@ -66,7 +66,7 @@ Admin ekranından isim, sıra ve aktiflik değiştirilebilir.
 1. supabase.com'da yeni proje açın (Zühtü Bey'den ayrı). Bölge: Frankfurt.
 2. `Authentication > Sign In / Providers > Email`: "Allow new users to sign up" KAPALI olsun.
 3. `Authentication > Users > Add user` ile ilk hesabı açın. E-posta: `osman@personel.kentmekanikdogalgaz.com` gibi; "Auto Confirm User" işaretli. Bu adreslerin posta kutusu yoktur, parola sıfırlamayı admin panelden yapar.
-4. `SQL Editor`'de `supabase/migrations/` altındaki dosyaları tarih sırasıyla çalıştırın (`..._is_takip.sql`, `..._is_takip_v2.sql`, `..._takvim_usta.sql`). Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
+4. `SQL Editor`'de `supabase/migrations/` altındaki dosyaları tarih sırasıyla çalıştırın (`..._is_takip.sql`, `..._is_takip_v2.sql`, `..._takvim_usta.sql`, `..._is_gunu_notu.sql`). Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
 5. `Project Settings > API` altındaki Project URL ve publishable (anon) key değerlerini `admin/supabase-config.js` dosyasına yazın.
 6. Push edin; Vercel otomatik yayınlar.
 
@@ -83,7 +83,7 @@ Giriş ekranına sadece `osman` yazılır; uygulama uzantıyı kendisi ekler.
 
 - `staff_members`: personel ve rol
 - `job_stages`: aşama tanımları (ad, sıra, renk, aktif, kapanış aşaması mı)
-- `jobs`: müşteri, adres, ilçe, not, mevcut aşama, randevu, montaj planı tarihi + usta (`crew`), durum (open/closed/cancelled)
+- `jobs`: müşteri, adres, ilçe, not, mevcut aşama, randevu, iş günü (`planned_at`) + usta (`crew`) + iş notu (`plan_note`), durum (open/closed/cancelled)
 - `job_events`: her aşama değişimi, not, randevu, iptal kaydı
 - `jobs_view` / `job_events_view`: ekranın okuduğu birleşik görünümler
 

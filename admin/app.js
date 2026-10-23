@@ -74,7 +74,7 @@ const el = Object.fromEntries([
   "secPay", "paySummary", "priceInput", "savePriceButton", "paidTotal", "remainingTotal",
   "payAmount", "payMethod", "payDate", "addPaymentButton", "paymentList", "reminderInput", "reminderNote", "saveReminderButton",
   "secFiles", "filesSummary", "fileKinds", "cameraInput", "fileInput", "pasteButton", "uploadStatus", "fileList",
-  "secDates", "datesSummary", "plannedInput", "savePlannedButton", "appointmentInput", "saveAppointmentButton",
+  "secDates", "datesSummary", "plannedInput", "planNoteInput", "savePlannedButton", "secAppt", "apptSummary", "appointmentInput", "saveAppointmentButton",
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
   "secMsg", "messageButtons",
   "noteInput", "addNoteButton", "timeline", "cancelJobButton", "reopenJobButton",
@@ -769,8 +769,9 @@ function calRow(j, kind) {
     ? `<span class="cal-crew${j.crew ? "" : " none"}">${escapeHtml(j.crew || "usta yok")}</span>`
     : `<span class="cal-crew appt">${timeFmt.format(new Date(j.appointment_at))}</span>`;
   const sub = [districtOf(j), j.address, j.stage_short_name || j.stage_name].filter(Boolean).join(" · ");
+  const note = kind === "plan" && j.plan_note ? `<div class="cal-note">${escapeHtml(j.plan_note)}</div>` : "";
   return `<article class="money-row cal-row" data-id="${j.id}" style="border-left-color:${escapeHtml(j.stage_color)}">
-      <div class="mr-top"><span class="mr-name">${escapeHtml(j.customer_name)}</span>${right}</div>
+      <div class="mr-top"><span class="mr-name">${escapeHtml(j.customer_name)}</span>${right}</div>${note}
       <div class="mr-bottom"><span class="mr-sub">${escapeHtml(sub)}</span>
         <span class="mr-actions">
           ${tel ? `<a class="mr-act" href="${tel}" data-call title="Ara">📞</a>` : ""}
@@ -785,7 +786,7 @@ function renderCalDay() {
   const planned = plannedOn(day);
   const appts = apptOn(day);
   let html = "";
-  if (planned.length) html += `<h4 class="cal-sub">Montaj · ${planned.length} iş</h4>` + planned.map((j) => calRow(j, "plan")).join("");
+  if (planned.length) html += `<h4 class="cal-sub">İş günü · ${planned.length} iş</h4>` + planned.map((j) => calRow(j, "plan")).join("");
   if (appts.length) html += `<h4 class="cal-sub">Aksa randevusu · ${appts.length}</h4>` + appts.map((j) => calRow(j, "appt")).join("");
   el.calDayList.innerHTML = html || `<p class="hint cal-empty">Bu güne plan yok.</p>`;
 }
@@ -847,10 +848,10 @@ function weekShareText() {
     const planned = plannedOn(day), appts = apptOn(day);
     lines.push(`${weekdayShortFmt.format(x)} ${dayShortFmt.format(x)}`);
     if (!planned.length && !appts.length) lines.push("  —");
-    planned.forEach((j) => lines.push(`  • ${j.customer_name} · ${[districtOf(j), j.address].filter(Boolean).join(", ")} · ${j.crew || "usta yok"}`));
+    planned.forEach((j) => lines.push(`  • ${j.customer_name} · ${[districtOf(j), j.address].filter(Boolean).join(", ")} · ${j.crew || "usta yok"}${j.plan_note ? " · " + j.plan_note : ""}`));
     appts.forEach((j) => lines.push(`  🔥 ${timeFmt.format(new Date(j.appointment_at))} Aksa: ${j.customer_name}`));
   }
-  return [`Montaj planı ${dayShortFmt.format(mon)} – ${dayFmt.format(sun)}`, "", ...lines].join("\n");
+  return [`İş planı ${dayShortFmt.format(mon)} – ${dayFmt.format(sun)}`, "", ...lines].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -980,12 +981,16 @@ function renderDetail() {
 
   // Tarihler
   el.plannedInput.value = job.planned_at || "";
+  el.planNoteInput.value = job.plan_note || "";
   el.appointmentInput.value = toLocalInputValue(job.appointment_at);
   el.appointmentResult.hidden = !(isOpen && job.appointment_at);
   const dateBits = [];
-  if (job.planned_at) dateBits.push("montaj " + dayShortFmt.format(new Date(job.planned_at + "T00:00")) + (job.crew ? " · " + job.crew : ""));
-  if (job.appointment_at) dateBits.push("Aksa " + shortDateFmt.format(new Date(job.appointment_at)));
+  if (job.planned_at) dateBits.push(dayShortFmt.format(fromYmd(job.planned_at)) + (job.crew ? " · " + job.crew : ""));
+  else if (job.plan_note) dateBits.push(job.plan_note);
   el.datesSummary.textContent = dateBits.join(" · ");
+  // Aksa randevusu: proje onayından sonra ya da randevu girilmişse göster
+  el.secAppt.hidden = !(job.appointment_at || ["proje_onay", "eksikler", "randevu", "gaz"].includes(job.stage_key));
+  el.apptSummary.textContent = job.appointment_at ? shortDateFmt.format(new Date(job.appointment_at)) : "";
 
   // Kontrol özeti
   const total = activeCheckItems().length;
@@ -1161,6 +1166,7 @@ async function savePlan(patch) {
     ...patch,
   };
   if (job.crew === undefined) delete params.p_crew; // migration henüz çalışmadıysa usta gönderme
+  if (job.plan_note === undefined) delete params.p_plan_note;
   try {
     await rpc("set_job_plan", params);
     toast("Kaydedildi");
@@ -1538,7 +1544,7 @@ el.summaryBack.addEventListener("click", goBack);
 el.calendarButton.addEventListener("click", () => openCalendar());
 el.calendarBack.addEventListener("click", goBack);
 el.calendarToday.addEventListener("click", () => { state.calDay = todayStr(); const d = fromYmd(state.calDay); d.setDate(1); state.calMonth = d; renderCalendar(); });
-el.calendarShare.addEventListener("click", () => shareText("Montaj planı", weekShareText(), "Haftanın planı kopyalandı, WhatsApp'a yapıştırabilirsiniz"));
+el.calendarShare.addEventListener("click", () => shareText("İş planı", weekShareText(), "Haftanın planı kopyalandı, WhatsApp'a yapıştırabilirsiniz"));
 el.calPrev.addEventListener("click", () => calShiftMonth(-1));
 el.calNext.addEventListener("click", () => calShiftMonth(1));
 el.calGrid.addEventListener("click", (event) => {
@@ -1604,7 +1610,7 @@ el.saveReminderButton.addEventListener("click", () => savePlan({ p_reminder_at: 
 el.savePlannedButton.addEventListener("click", () => {
   const crew = el.crewInput.value.trim();
   if (crew) localStorage.setItem(LAST_CREW_KEY, crew);
-  savePlan({ p_planned_at: el.plannedInput.value || null, p_crew: crew });
+  savePlan({ p_planned_at: el.plannedInput.value || null, p_crew: crew, p_plan_note: el.planNoteInput.value.trim() });
 });
 
 el.fileKinds.addEventListener("click", (event) => {

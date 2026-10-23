@@ -117,7 +117,7 @@
         <button id="calendarBack" class="icon-btn" type="button" aria-label="Geri">‹</button>
         <div class="topbar-brand">
           <span class="topbar-title">Takvim</span>
-          <span class="topbar-user">Montaj planı · usta · Aksa randevuları</span>
+          <span class="topbar-user">İş günleri · usta · not</span>
         </div>
         <div class="topbar-actions">
           <button id="calendarToday" class="icon-btn" type="button" title="Bugüne git">◎</button>
@@ -139,7 +139,7 @@
           </div>
           <div id="calDayList" class="cal-day-list"></div>
         </div>
-        <p class="hint">Güne dokunup "+ İş ekle" ile montajı planlayın, ustayı yazın. Satırdaki 💬 müşteriye "şu gün geliyoruz" mesajını hazırlar. ⇪ haftanın planını metin olarak kopyalar.</p>
+        <p class="hint">Güne dokunup "+ İş ekle" ile işi o güne yazın, ustayı seçin. 🔥 Aksa gaz açma randevusu. Satırdaki 💬 müşteriye "şu gün geliyoruz" mesajını hazırlar. ⇪ haftanın planını metin olarak kopyalar.</p>
       </div>
     </section>
 
@@ -272,20 +272,30 @@
 
         <!-- Randevu ve plan -->
         <details class="section" id="secDates">
-          <summary><span>📅 Plan &amp; Aksa randevusu</span><span id="datesSummary" class="section-meta"></span></summary>
+          <summary><span>📅 İş günü</span><span id="datesSummary" class="section-meta"></span></summary>
           <div class="section-body">
             <div class="row">
-              <label class="grow">Montaj planı
+              <label class="grow">Tesisat / montaj günü
                 <input id="plannedInput" type="date">
               </label>
               <label class="grow">Usta / ekip
                 <input id="crewInput" type="text" list="crewList" autocomplete="off" maxlength="60" placeholder="örn. Ömer usta">
               </label>
             </div>
-            <button id="savePlannedButton" class="btn btn-outline btn-block" type="button">Planı kaydet</button>
+            <label>Not
+              <input id="planNoteInput" type="text" autocomplete="off" maxlength="200" placeholder="örn. 3 kolon, 2. kat, etrafı toparlasınlar">
+            </label>
+            <button id="savePlannedButton" class="btn btn-outline btn-block" type="button">Kaydet</button>
             <datalist id="crewList"></datalist>
+          </div>
+        </details>
+
+        <!-- Aksa randevusu: sadece proje onayından sonra veya randevu varsa görünür -->
+        <details class="section" id="secAppt" hidden>
+          <summary><span>🔥 Aksa gaz açma randevusu</span><span id="apptSummary" class="section-meta"></span></summary>
+          <div class="section-body">
             <div class="row">
-              <label class="grow">Aksa gaz açma randevusu
+              <label class="grow">Aksa'nın verdiği randevu
                 <input id="appointmentInput" type="datetime-local">
               </label>
               <button id="saveAppointmentButton" class="btn btn-outline self-end" type="button">Kaydet</button>
@@ -377,7 +387,7 @@
   <!-- Takvim: güne iş ekle -->
   <div id="planPicker" class="sheet" hidden>
     <h2>Güne iş ekle</h2>
-    <p class="hint"><strong id="planPickerDay"></strong> için montaj planlanacak. Ustayı yazın, sonra işe dokunun.</p>
+    <p class="hint"><strong id="planPickerDay"></strong> gününe yazılacak. Ustayı yazın, sonra işe dokunun.</p>
     <label>Usta / ekip
       <input id="planCrew" type="text" list="crewList" autocomplete="off" maxlength="60" placeholder="örn. Ömer usta">
     </label>
