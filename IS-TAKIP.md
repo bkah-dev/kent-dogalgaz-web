@@ -43,7 +43,7 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - Telefonun geri tuşu uygulama içinde çalışır: açık alt pencereyi kapatır, detaydan listeye, kalan listesi/özetten ana listeye döner; uygulamayı kapatmaz.
 - İlçe filtresi: birden fazla ilçe olunca ana listede ve kalan listesinde ilçe çipleri çıkar (sayılarıyla). Seçim iki ekranda ortak ve hatırlanır.
 - Aylık özet (📊): son 12 ay için yeni iş / gaz açılan / tamamlanan / tahsilat tablosu, bu ayın üç kutusu, açık işlerin aşama dağılımı (7+ gün bekleyenler kırmızı) ve "Şu an" sayıları (borçlu, sözü geçmiş, fiyatsız, telefonsuz). Excel'den aktarılan işler ve ödemeleri aylık sayımlara girmez.
-- Ödeme eklerken tarih seçilir (varsayılan bugün, ileri tarih kabul edilmez).
+- Ödeme eklerken tarih seçilir (varsayılan bugün; geçmiş veya ileri tarih serbest, vadeli çek/senet için ileri tarih girilebilir).
 - Yeni iş: ilçe son kullanılanla dolu gelir; telefon kaydederken `0532 111 22 33` biçimine çevrilir.
 - Kartta not satırı (Excel'den gelenlerde iş içeriği: dönüşüm, kolon vb.).
 

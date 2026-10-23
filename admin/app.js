@@ -935,7 +935,6 @@ async function addPayment() {
   el.addPaymentButton.disabled = true;
   try {
     const paidAt = el.payDate.value || todayStr();
-    if (paidAt > todayStr()) { toast("Ödeme tarihi ileri bir gün olamaz", true); el.addPaymentButton.disabled = false; return; }
     await rpc("add_payment", { p_job_id: state.activeJobId, p_amount: amount, p_method: el.payMethod.value, p_note: "", p_paid_at: paidAt });
     el.payAmount.value = "";
     el.payDate.value = todayStr();
