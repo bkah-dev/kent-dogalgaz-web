@@ -421,3 +421,29 @@ input:disabled { background: var(--cream); color: var(--muted); -webkit-text-fil
   .cal-chip { font-size: .74rem; }
 }
 .cal-note { font-size: .82rem; color: var(--ink); font-weight: 600; white-space: normal; }
+
+/* Maliyet / teklif */
+.quote-list li { display: grid; gap: 4px; align-items: stretch; }
+.q-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.q-name { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.q-amt { white-space: nowrap; }
+.q-amt.neg { color: var(--red); }
+.q-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.q-qty { display: inline-flex; align-items: center; gap: 6px; }
+.q-qty b { min-width: 1.6em; text-align: center; }
+.q-qty small { color: var(--muted); margin-left: 4px; }
+.q-qty .mini { min-width: 32px; min-height: 32px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); font-size: 1rem; cursor: pointer; }
+.q-empty { color: var(--muted); font-size: .9rem; }
+.quote-totals { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; background: rgba(22, 35, 92, .06); }
+.quote-totals div { display: flex; justify-content: space-between; font-weight: 700; }
+.quote-totals div:first-child strong { font-size: 1.1rem; }
+.quote-cats { padding: 0; }
+.q-add { margin-left: auto; font-size: 1.3rem; font-weight: 800; color: var(--navy); }
+.quote-free { display: grid; gap: 10px; }
+.price-admin .price-row { display: grid; grid-template-columns: auto 1fr 84px auto auto auto; align-items: center; gap: 4px; }
+.price-row .cat { font-size: .7rem; font-weight: 800; text-transform: uppercase; color: var(--muted); }
+.price-row .unit { font-size: .75rem; color: var(--muted); white-space: nowrap; }
+.price-row input.pr { text-align: right; font-weight: 700; }
+.price-add { display: grid; gap: 6px; }
+.price-add select { flex: 0 0 auto; }
+.setting-row { align-items: end; }

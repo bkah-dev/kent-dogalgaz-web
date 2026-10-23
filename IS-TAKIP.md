@@ -43,6 +43,8 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - Telefonun geri tuşu uygulama içinde çalışır: açık alt pencereyi kapatır, detaydan listeye, kalan listesi/özetten ana listeye döner; uygulamayı kapatmaz.
 - İlçe filtresi: birden fazla ilçe olunca ana listede ve kalan listesinde ilçe çipleri çıkar (sayılarıyla). Seçim iki ekranda ortak ve hatırlanır.
 - Aylık özet (📊): son 12 ay için yeni iş / gaz açılan / tamamlanan / tahsilat tablosu, bu ayın üç kutusu, açık işlerin aşama dağılımı (7+ gün bekleyenler kırmızı) ve "Şu an" sayıları (borçlu, sözü geçmiş, fiyatsız, telefonsuz). Excel'den aktarılan işler ve ödemeleri aylık sayımlara girmez.
+- Maliyet / teklif (🧾, detayda Ödeme'nin üstünde): iş alırken kalem kalem fiyat. Kalemler admin'in Ayarlar (⚙) altında tuttuğu fiyat listesinden gelir (kategoriler: İş, Kombi, Malzeme, Hizmet; ad, birim, nakit fiyat; pasife alma/silme). "+ Kalem ekle" ile kategori seçip dokun; "Serbest kalem" ile elle tutar (indirim için eksi). Adet −/+ ile değişir. Altta Nakit toplamı ve Kart toplamı (Ayarlar'daki "Kart farkı %" ile); "Nakit/Kart fiyatı işe yaz" iş fiyatını tek dokunuşla yazar (onay sorar, geçmişe "Fiyat maliyet tablosundan yazıldı" düşer). Kalem fiyatı eklendiği anki fiyattır; liste sonradan değişse eski işler değişmez. Başlık toplamı gösterir, iş fiyatından farklıysa uyarır.
+- Hazır WhatsApp mesajında tarih eksikse (Aksa randevusu / iş günü girilmemişse) düğme önce tarihi sorar, WhatsApp'ı seçilen tarihle açar ve tarihi işe de kaydeder.
 - Ödeme eklerken tarih seçilir (varsayılan bugün; geçmiş veya ileri tarih serbest, vadeli çek/senet için ileri tarih girilebilir).
 - Yeni iş: ilçe son kullanılanla dolu gelir; telefon kaydederken `0532 111 22 33` biçimine çevrilir.
 - Kartta not satırı (Excel'den gelenlerde iş içeriği: dönüşüm, kolon vb.).
@@ -66,7 +68,7 @@ Admin ekranından isim, sıra ve aktiflik değiştirilebilir.
 1. supabase.com'da yeni proje açın (Zühtü Bey'den ayrı). Bölge: Frankfurt.
 2. `Authentication > Sign In / Providers > Email`: "Allow new users to sign up" KAPALI olsun.
 3. `Authentication > Users > Add user` ile ilk hesabı açın. E-posta: `osman@personel.kentmekanikdogalgaz.com` gibi; "Auto Confirm User" işaretli. Bu adreslerin posta kutusu yoktur, parola sıfırlamayı admin panelden yapar.
-4. `SQL Editor`'de `supabase/migrations/` altındaki dosyaları tarih sırasıyla çalıştırın (`..._is_takip.sql`, `..._is_takip_v2.sql`, `..._takvim_usta.sql`, `..._is_gunu_notu.sql`). Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
+4. `SQL Editor`'de `supabase/migrations/` altındaki dosyaları tarih sırasıyla çalıştırın (`..._is_takip.sql`, `..._is_takip_v2.sql`, `..._is_takip_v3.sql`). Migration'dan önce açılmış ilk hesap otomatik `admin` olur, sonrakiler `staff`.
 5. `Project Settings > API` altındaki Project URL ve publishable (anon) key değerlerini `admin/supabase-config.js` dosyasına yazın.
 6. Push edin; Vercel otomatik yayınlar.
 
@@ -85,6 +87,7 @@ Giriş ekranına sadece `osman` yazılır; uygulama uzantıyı kendisi ekler.
 - `job_stages`: aşama tanımları (ad, sıra, renk, aktif, kapanış aşaması mı)
 - `jobs`: müşteri, adres, ilçe, not, mevcut aşama, randevu, iş günü (`planned_at`) + usta (`crew`) + iş notu (`plan_note`), durum (open/closed/cancelled)
 - `job_events`: her aşama değişimi, not, randevu, iptal kaydı
+- `price_items`: fiyat listesi (kategori, ad, birim, fiyat, sıra, aktif); `job_items`: işin maliyet kalemleri (ad/birim/fiyat o anki kopya, adet); `app_settings`: `card_markup_pct` (kart farkı yüzdesi)
 - `jobs_view` / `job_events_view`: ekranın okuduğu birleşik görünümler
 
 Aşama değişimi, randevu, iptal ve bilgi düzenleme RPC fonksiyonlarıyla yapılır; iş ve geçmiş kaydı tek işlemde yazılır. Tüm tablolar RLS ile korunur, yalnızca `staff_members`'taki hesaplar okuyup yazabilir.

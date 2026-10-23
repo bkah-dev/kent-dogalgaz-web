@@ -207,6 +207,21 @@
           <div id="checklist" class="checklist"></div>
         </details>
 
+        <!-- Maliyet / teklif -->
+        <details class="section" id="secQuote">
+          <summary><span>🧾 Maliyet / teklif</span><span id="quoteSummary" class="section-meta"></span></summary>
+          <div class="section-body">
+            <ul id="quoteList" class="plain-list quote-list"></ul>
+            <button id="addQuoteItemButton" class="btn btn-outline btn-block" type="button">+ Kalem ekle</button>
+            <div id="quoteTotals" class="quote-totals" hidden></div>
+            <div id="quoteActions" class="row" hidden>
+              <button id="quoteToPriceCash" class="btn btn-primary grow" type="button">Nakit fiyatı işe yaz</button>
+              <button id="quoteToPriceCard" class="btn btn-outline grow" type="button">Kart fiyatı işe yaz</button>
+            </div>
+            <p class="hint">Kalemler fiyat listesinden gelir (Ayarlar ⚙). Kombi, iş türü, malzeme ve hizmet ayrı ayrı; indirim için "Serbest kalem"e eksi tutar yazın.</p>
+          </div>
+        </details>
+
         <!-- Ödeme -->
         <details class="section" id="secPay">
           <summary><span>💰 Ödeme</span><span id="paySummary" class="section-meta"></span></summary>
@@ -384,6 +399,51 @@
     </div>
   </form>
 
+  <!-- Maliyet: kalem ekle -->
+  <div id="quotePicker" class="sheet" hidden>
+    <h2>Kalem ekle</h2>
+    <div id="quoteCats" class="chips chips-sub quote-cats">
+      <button type="button" class="chip active" data-cat="is">İş</button>
+      <button type="button" class="chip" data-cat="kombi">Kombi</button>
+      <button type="button" class="chip" data-cat="malzeme">Malzeme</button>
+      <button type="button" class="chip" data-cat="hizmet">Hizmet</button>
+      <button type="button" class="chip" data-cat="serbest">Serbest kalem</button>
+    </div>
+    <div id="quoteCatalog" class="stage-picker plan-picker"></div>
+    <form id="quoteFree" class="quote-free" hidden novalidate>
+      <label>Açıklama *
+        <input id="qfName" type="text" maxlength="80" autocomplete="off" placeholder="örn. İndirim, ek malzeme">
+      </label>
+      <div class="row">
+        <label class="grow">Tutar (₺) *
+          <input id="qfPrice" type="number" inputmode="decimal" step="1" placeholder="eksi = indirim">
+        </label>
+        <label class="grow">Adet
+          <input id="qfQty" type="number" inputmode="decimal" min="0.1" step="0.5" value="1">
+        </label>
+      </div>
+      <p id="quoteFreeError" class="error" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block">Ekle</button>
+    </form>
+    <div class="sheet-actions">
+      <button type="button" id="quotePickerClose" class="btn btn-outline btn-block">Kapat</button>
+    </div>
+  </div>
+
+  <!-- Hazır mesaj için eksik tarih -->
+  <form id="dateAsk" class="sheet" novalidate hidden>
+    <h2 id="dateAskTitle">Tarih girilmemiş</h2>
+    <p id="dateAskHint" class="hint"></p>
+    <label id="dateAskLabel">Tarih
+      <input id="dateAskInput" type="date">
+    </label>
+    <p id="dateAskError" class="error" role="alert"></p>
+    <div class="sheet-actions">
+      <button type="button" id="dateAskCancel" class="btn btn-outline">Vazgeç</button>
+      <button type="submit" id="dateAskSave" class="btn btn-primary">Kaydet ve WhatsApp'ı aç</button>
+    </div>
+  </form>
+
   <!-- Takvim: güne iş ekle -->
   <div id="planPicker" class="sheet" hidden>
     <h2>Güne iş ekle</h2>
@@ -424,6 +484,28 @@
     <div id="stagesList" class="stages-admin"></div>
     <h2 class="mt">Kontrol listesi</h2>
     <div id="checkItemsList" class="stages-admin"></div>
+    <h2 class="mt">Fiyat listesi</h2>
+    <p class="hint">Maliyet tablosunda seçilen kalemler. Fiyat nakit fiyatıdır; kart farkı aşağıdaki yüzdeyle hesaplanır.</p>
+    <div id="priceList" class="stages-admin price-admin"></div>
+    <form id="priceAdd" class="price-add" novalidate>
+      <div class="row">
+        <select id="paCategory">
+          <option value="is">İş</option><option value="kombi">Kombi</option><option value="malzeme">Malzeme</option><option value="hizmet">Hizmet</option>
+        </select>
+        <input id="paName" type="text" maxlength="80" placeholder="Yeni kalem adı" autocomplete="off">
+      </div>
+      <div class="row">
+        <input id="paUnit" type="text" maxlength="12" placeholder="birim (adet)" autocomplete="off">
+        <input id="paPrice" type="number" inputmode="decimal" min="0" step="1" placeholder="fiyat ₺">
+        <button type="submit" class="btn btn-outline">Ekle</button>
+      </div>
+    </form>
+    <div class="row setting-row">
+      <label class="grow">Kart farkı (%)
+        <input id="cardMarkupInput" type="number" inputmode="decimal" min="0" max="100" step="0.5">
+      </label>
+      <button type="button" id="saveMarkupButton" class="btn btn-outline self-end">Kaydet</button>
+    </div>
     <div class="sheet-actions">
       <button type="button" id="stagesClose" class="btn btn-primary btn-block">Kapat</button>
     </div>

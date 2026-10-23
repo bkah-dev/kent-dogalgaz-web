@@ -21,11 +21,11 @@ const KIND_TO_CHECK = { sozlesme: "sozlesme_foto", abone_formu: "abone_formu", b
 const MESSAGE_TEMPLATES = [
   { key: "kesif", title: "Keşif sonrası takip", hint: "Teklif verildi, karar bekleniyor",
     text: "Merhaba {ad}, Kent Doğalgaz. Keşif sonrası ilettiğimiz teklif hakkında karar verdiyseniz bize dönebilirsiniz. Sorularınız için her zaman buradayız. İyi günler." },
-  { key: "montaj", title: "Montaj günü bilgisi", hint: "Plan tarihi ve usta otomatik eklenir",
+  { key: "montaj", title: "Montaj günü bilgisi", hint: "İş günü ve usta otomatik eklenir", needs: "plan",
     text: "Merhaba {ad}, Kent Doğalgaz. Doğalgaz tesisat montajınız {plan} günü yapılacak{usta}. O gün evde bulunmanızı ve çalışılacak alanın (kombi yeri, boru güzergâhı, sayaç yeri) boş olmasını rica ederiz. Sorunuz olursa arayabilirsiniz." },
   { key: "sayac", title: "Proje onaylandı, sayaç alın", hint: "Aksa onayından sonra",
     text: "Merhaba {ad}, Kent Doğalgaz. Doğalgaz projeniz Aksa tarafından onaylandı. Sayacınızı alabilirsiniz; aldığınızda bize haber verin, gaz açma randevusu için işlemleri başlatalım." },
-  { key: "randevu", title: "Randevu bilgisi", hint: "Aksa randevu günü",
+  { key: "randevu", title: "Randevu bilgisi", hint: "Aksa randevu günü", needs: "appointment",
     text: "Merhaba {ad}, Kent Doğalgaz. Aksa gaz açma randevunuz {tarih} tarihinde. O gün evde bulunmanız gerekiyor. Sorunuz olursa arayabilirsiniz." },
   { key: "odeme", title: "Kalan ödeme hatırlatma", hint: "Kalan tutar otomatik eklenir",
     text: "Merhaba {ad}, Kent Doğalgaz. Kalan {kalan} ödemenizi hatırlatmak istedik. Uygun olduğunuzda bize dönebilirsiniz. Teşekkür ederiz." },
@@ -53,6 +53,12 @@ const state = {
   summary: null,
   calMonth: null,
   calDay: null,
+  priceItems: [],
+  settings: {},
+  quoteReady: false,
+  quoteItems: [],
+  quoteCat: "is",
+  dateAskFor: null,
   skipPop: false,
   activeJobId: null,
   editingJobId: null,
@@ -83,7 +89,11 @@ const el = Object.fromEntries([
   "overlay", "jobDialog", "jobDialogTitle", "confirmDialog", "confirmTitle", "confirmText", "confirmCancel", "confirmOk", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
   "fStageWrap", "fStage", "jobDialogError", "jobDialogCancel", "jobDialogSave",
   "stagePicker", "stagePickerList", "stagePickerCancel",
-  "stagesDialog", "stagesList", "checkItemsList", "stagesClose", "toast"
+  "stagesDialog", "stagesList", "checkItemsList", "stagesClose",
+  "secQuote", "quoteSummary", "quoteList", "addQuoteItemButton", "quoteTotals", "quoteActions", "quoteToPriceCash", "quoteToPriceCard",
+  "quotePicker", "quoteCats", "quoteCatalog", "quoteFree", "qfName", "qfPrice", "qfQty", "quoteFreeError", "quotePickerClose",
+  "dateAsk", "dateAskTitle", "dateAskHint", "dateAskLabel", "dateAskInput", "dateAskError", "dateAskCancel", "dateAskSave",
+  "priceList", "priceAdd", "paCategory", "paName", "paUnit", "paPrice", "cardMarkupInput", "saveMarkupButton", "toast"
 ].map((id) => [id, document.getElementById(id)]));
 
 const db = window.supabase.createClient(config.url, config.publishableKey, {
@@ -239,7 +249,7 @@ function activeJob() {
 }
 
 function allSheets() {
-  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.planPicker, el.stagePicker, el.stagesDialog];
+  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.planPicker, el.quotePicker, el.dateAsk, el.stagePicker, el.stagesDialog];
 }
 
 function anySheetOpen() {
@@ -305,6 +315,14 @@ async function loadStages() {
   if (e2) throw e2;
   state.stages = stages || [];
   state.checkItems = items || [];
+  // v3 tabloları: migration çalışmadıysa sessizce boş kalır
+  const [pi, st] = await Promise.all([
+    db.from("price_items").select("*").order("sort_order").order("id"),
+    db.from("app_settings").select("*"),
+  ]);
+  state.quoteReady = !pi.error;
+  state.priceItems = pi.error ? [] : pi.data || [];
+  state.settings = Object.fromEntries((st.error ? [] : st.data || []).map((r) => [r.key, r.value]));
 }
 
 async function loadJobs() {
@@ -322,11 +340,12 @@ async function loadJobs() {
 }
 
 async function loadJobExtras(jobId) {
-  const [ev, ch, pay, fi] = await Promise.all([
+  const [ev, ch, pay, fi, qi] = await Promise.all([
     db.from("job_events_view").select("*").eq("job_id", jobId).order("created_at", { ascending: false }).limit(300),
     db.from("job_checks").select("item_id,done_at,done_by").eq("job_id", jobId),
     db.from("payments").select("*").eq("job_id", jobId).order("paid_at", { ascending: false }).order("id", { ascending: false }),
     db.from("job_files").select("*").eq("job_id", jobId).order("created_at", { ascending: false }),
+    db.from("job_items").select("*").eq("job_id", jobId).order("id"),
   ]);
   const err = ev.error || ch.error || pay.error || fi.error;
   if (err) throw err;
@@ -334,6 +353,7 @@ async function loadJobExtras(jobId) {
   state.checks = ch.data || [];
   state.payments = pay.data || [];
   state.files = fi.data || [];
+  state.quoteItems = qi.error ? [] : qi.data || [];
 }
 
 async function refreshDetail() {
@@ -356,6 +376,7 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "payments" }, scheduleReload)
     .on("postgres_changes", { event: "*", schema: "public", table: "job_checks" }, scheduleReload)
+    .on("postgres_changes", { event: "*", schema: "public", table: "job_items" }, scheduleReload)
     .subscribe();
 }
 
@@ -1003,6 +1024,11 @@ function renderDetail() {
   // Mesajlar
   el.messageButtons.innerHTML = MESSAGE_TEMPLATES.map((t) => {
     const href = whatsappHref(job.phone, fillTemplate(t.text, job));
+    const missing = t.needs === "appointment" ? !job.appointment_at : t.needs === "plan" ? !job.planned_at : false;
+    if (href && missing) {
+      return `<button type="button" class="btn btn-outline msg-btn needs" data-need="${t.needs}" data-tpl="${t.key}">
+      <span>${escapeHtml(t.title)}<small>${t.needs === "appointment" ? "Randevu girilmemiş, önce tarih sorulur" : "İş günü girilmemiş, önce tarih sorulur"}</small></span></button>`;
+    }
     return `<a class="btn btn-outline msg-btn" ${href ? `href="${href}" target="_blank" rel="noopener"` : 'aria-disabled="true" href="#"'}>
       <span>${escapeHtml(t.title)}<small>${escapeHtml(t.hint)}</small></span></a>`;
   }).join("");
@@ -1010,6 +1036,7 @@ function renderDetail() {
 }
 
 function renderExtras() {
+  renderQuote();
   renderChecklist();
   renderPayments();
   renderFiles();
@@ -1358,6 +1385,209 @@ async function saveJobDialog(event) {
 }
 
 // ---------------------------------------------------------------------------
+// Maliyet / teklif: fiyat listesinden kalemler, nakit/kart toplamı, fiyatı işe yazma
+// ---------------------------------------------------------------------------
+const qtyFmt = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 2 });
+function cardMarkup() {
+  return Math.max(0, Number(String(state.settings.card_markup_pct ?? "0").replace(",", ".")) || 0);
+}
+function quoteTotal() {
+  return state.quoteItems.reduce((sum, i) => sum + Number(i.qty) * Number(i.unit_price), 0);
+}
+function quoteCardTotal() {
+  return Math.round(quoteTotal() * (1 + cardMarkup() / 100));
+}
+
+function renderQuote() {
+  const job = activeJob();
+  if (!job) return;
+  const items = state.quoteItems;
+  const total = quoteTotal();
+  const pct = cardMarkup();
+  if (!state.quoteReady) {
+    el.quoteList.innerHTML = `<li class="q-empty">Fiyat listesi henüz kurulmadı (v3 SQL dosyası çalıştırılmalı).</li>`;
+    el.addQuoteItemButton.hidden = true;
+    el.quoteTotals.hidden = true; el.quoteActions.hidden = true;
+    el.quoteSummary.textContent = "";
+    return;
+  }
+  el.addQuoteItemButton.hidden = false;
+  el.quoteList.innerHTML = items.map((i) => `
+    <li data-item="${i.id}">
+      <div class="q-top"><span class="q-name">${escapeHtml(i.name)}</span><strong class="q-amt${Number(i.unit_price) < 0 ? " neg" : ""}">${money.format(Number(i.qty) * Number(i.unit_price))}</strong></div>
+      <div class="q-bottom">
+        <span class="q-qty"><button type="button" class="mini" data-qty="-1" aria-label="Azalt">−</button><b>${qtyFmt.format(i.qty)}</b><button type="button" class="mini" data-qty="1" aria-label="Artır">+</button>
+          <small>${escapeHtml(i.unit)} × ${money.format(i.unit_price)}</small></span>
+        <button type="button" class="del" data-del-item="${i.id}">Sil</button>
+      </div>
+    </li>`).join("") || `<li class="q-empty">Henüz kalem yok. "+ Kalem ekle" ile iş türünü, kombiyi ve malzemeyi seçin.</li>`;
+  el.quoteTotals.hidden = !items.length;
+  el.quoteActions.hidden = !items.length;
+  el.quoteTotals.innerHTML = `<div><span>Nakit</span><strong>${money.format(total)}</strong></div>`
+    + (pct > 0 ? `<div><span>Kart (+%${qtyFmt.format(pct)})</span><strong>${money.format(quoteCardTotal())}</strong></div>` : "");
+  el.quoteToPriceCard.hidden = !(pct > 0);
+  el.quoteToPriceCash.textContent = pct > 0 ? "Nakit fiyatı işe yaz" : "Fiyatı işe yaz";
+  const price = Math.round(Number(job.price) || 0);
+  const matches = price > 0 && (price === Math.round(total) || (pct > 0 && price === quoteCardTotal()));
+  el.quoteSummary.textContent = items.length ? money.format(total) + (price > 0 && !matches ? " · fiyattan farklı" : "") : "";
+  el.quoteSummary.className = "section-meta" + (items.length && price > 0 && !matches ? " warn" : "");
+}
+
+function openQuotePicker() {
+  renderQuoteCatalog();
+  openSheet(el.quotePicker);
+}
+
+function renderQuoteCatalog() {
+  el.quoteCats.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c.dataset.cat === state.quoteCat));
+  const free = state.quoteCat === "serbest";
+  el.quoteFree.hidden = !free;
+  el.quoteCatalog.hidden = free;
+  if (free) { el.quoteFreeError.textContent = ""; return; }
+  const list = state.priceItems.filter((p) => p.is_active && p.category === state.quoteCat);
+  el.quoteCatalog.innerHTML = list.map((p) => `
+    <button type="button" class="stage-option plan-opt" data-price-item="${p.id}">
+      <span class="po-main"><span>${escapeHtml(p.name)}</span><small>${money.format(p.price)} / ${escapeHtml(p.unit)}</small></span>
+      <span class="q-add">+</span>
+    </button>`).join("") || `<p class="hint">Bu kategoride kalem yok. Admin, Ayarlar (⚙) altındaki fiyat listesinden ekler.</p>`;
+}
+
+async function insertQuoteItem(row) {
+  const { error } = await db.from("job_items").insert({ job_id: state.activeJobId, created_by: state.user.id, ...row });
+  if (error) throw error;
+  await loadJobExtras(state.activeJobId);
+  renderQuote();
+}
+
+async function addCatalogItem(id) {
+  const p = state.priceItems.find((x) => x.id === Number(id));
+  if (!p) return;
+  try {
+    await insertQuoteItem({ item_id: p.id, name: p.name, unit: p.unit, qty: 1, unit_price: Number(p.price) });
+    toast(`Eklendi: ${p.name}`);
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+async function addFreeItem(event) {
+  event.preventDefault();
+  const name = el.qfName.value.trim();
+  const price = Number(String(el.qfPrice.value).replace(",", "."));
+  const qty = Number(String(el.qfQty.value).replace(",", ".")) || 1;
+  if (!name) { el.quoteFreeError.textContent = "Açıklama yazın."; return; }
+  if (!Number.isFinite(price) || price === 0) { el.quoteFreeError.textContent = "Tutar yazın (indirim için eksi)."; return; }
+  if (!(qty > 0)) { el.quoteFreeError.textContent = "Adet sıfırdan büyük olmalı."; return; }
+  try {
+    await insertQuoteItem({ item_id: null, name, unit: "adet", qty, unit_price: price });
+    el.qfName.value = ""; el.qfPrice.value = ""; el.qfQty.value = "1"; el.quoteFreeError.textContent = "";
+    toast(`Eklendi: ${name}`);
+  } catch (error) {
+    el.quoteFreeError.textContent = friendlyError(error);
+  }
+}
+
+async function changeQuoteQty(id, delta) {
+  const item = state.quoteItems.find((i) => i.id === Number(id));
+  if (!item) return;
+  const step = Number(item.qty) % 1 === 0 ? 1 : 0.5;
+  const next = Number(item.qty) + delta * step;
+  try {
+    if (next <= 0) {
+      const { error } = await db.from("job_items").delete().eq("id", item.id);
+      if (error) throw error;
+    } else {
+      const { error } = await db.from("job_items").update({ qty: next }).eq("id", item.id);
+      if (error) throw error;
+    }
+    await loadJobExtras(state.activeJobId);
+    renderQuote();
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+async function deleteQuoteItem(id) {
+  const item = state.quoteItems.find((i) => i.id === Number(id));
+  if (!item) return;
+  if (!(await askConfirm(`"${item.name}" kalemi silinecek.`, "Kalemi sil"))) return;
+  try {
+    const { error } = await db.from("job_items").delete().eq("id", item.id);
+    if (error) throw error;
+    await loadJobExtras(state.activeJobId);
+    renderQuote();
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+async function quoteToPrice(kind) {
+  const job = activeJob();
+  if (!job) return;
+  const total = kind === "card" ? quoteCardTotal() : Math.round(quoteTotal());
+  if (!(total > 0)) { toast("Toplam sıfır veya eksi, fiyat yazılamaz", true); return; }
+  const current = Number(job.price) || 0;
+  const label = kind === "card" ? "kart" : "nakit";
+  if (current === total) { toast("Fiyat zaten bu"); return; }
+  const text = `İş fiyatı ${money.format(total)} (${label}) olarak yazılacak${current > 0 ? `; şu anki fiyat ${money.format(current)}` : ""}.`;
+  if (!(await askConfirm(text, "Fiyatı yaz", "Fiyat"))) return;
+  try {
+    const params = { p_job_id: job.id, p_price: total, p_planned_at: job.planned_at || null, p_reminder_at: job.reminder_at || null, p_reminder_note: job.reminder_note || "" };
+    await rpc("set_job_plan", params);
+    await db.from("job_events").insert({ job_id: job.id, kind: "note", note: `Fiyat maliyet tablosundan yazıldı (${label}): ${money.format(total)}${current > 0 ? ` (önceki ${money.format(current)})` : ""}`, created_by: state.user.id });
+    toast("Fiyat işe yazıldı");
+    await refreshDetail();
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hazır mesaj için eksik tarih: sor, WhatsApp'ı aç, arkada kaydet
+// ---------------------------------------------------------------------------
+function openDateAsk(need, tplKey) {
+  state.dateAskFor = { need, tplKey };
+  const appt = need === "appointment";
+  el.dateAskTitle.textContent = appt ? "Aksa randevusu girilmemiş" : "İş günü girilmemiş";
+  el.dateAskHint.textContent = appt
+    ? "Mesajda tarih yazması için Aksa'nın verdiği randevuyu girin. İşe de kaydedilir."
+    : "Mesajda tarih yazması için tesisat gününü girin. İşe de kaydedilir.";
+  el.dateAskLabel.firstChild.textContent = appt ? "Randevu tarihi ve saati" : "Tesisat / montaj günü";
+  el.dateAskInput.type = appt ? "datetime-local" : "date";
+  el.dateAskInput.value = "";
+  el.dateAskError.textContent = "";
+  openSheet(el.dateAsk);
+}
+
+async function submitDateAsk(event) {
+  event.preventDefault();
+  const job = activeJob();
+  const ask = state.dateAskFor;
+  if (!job || !ask) return;
+  const value = el.dateAskInput.value;
+  if (!value) { el.dateAskError.textContent = "Tarih seçin."; return; }
+  const tpl = MESSAGE_TEMPLATES.find((t) => t.key === ask.tplKey);
+  const preview = ask.need === "appointment"
+    ? { ...job, appointment_at: new Date(value).toISOString() }
+    : { ...job, planned_at: value };
+  const href = whatsappHref(job.phone, fillTemplate(tpl.text, preview));
+  if (!href) { el.dateAskError.textContent = "Telefon numarası geçersiz."; return; }
+  window.open(href, "_blank", "noopener"); // dokunma içinde, senkron: tarayıcı engellemez
+  await closeSheets();
+  try {
+    if (ask.need === "appointment") {
+      await rpc("set_job_appointment", { p_job_id: job.id, p_appointment_at: preview.appointment_at });
+      toast("Randevu kaydedildi");
+      await refreshDetail();
+    } else {
+      await savePlan({ p_planned_at: value });
+    }
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Aşama / kontrol yönetimi (admin)
 // ---------------------------------------------------------------------------
 function renderAdminLists() {
@@ -1377,6 +1607,90 @@ function renderAdminLists() {
       <button type="button" class="mini" data-act="down" ${i === items.length - 1 ? "disabled" : ""} title="Aşağı">↓</button>
       <button type="button" class="mini" data-act="toggle" title="${s.is_active ? "Pasife al" : "Aktif et"}">${s.is_active ? "👁" : "🚫"}</button>
     </div>`).join("");
+  renderPriceAdmin();
+}
+
+const CAT_LABELS = { is: "İş", kombi: "Kombi", malzeme: "Malzeme", hizmet: "Hizmet" };
+
+function renderPriceAdmin() {
+  const prices = [...state.priceItems].sort((a, b) => a.category.localeCompare(b.category) || a.sort_order - b.sort_order || a.id - b.id);
+  el.priceList.innerHTML = prices.map((p) => `
+    <div class="stage-row price-row${p.is_active ? "" : " inactive"}" data-price="${p.id}">
+      <span class="cat">${CAT_LABELS[p.category] || p.category}</span>
+      <input type="text" value="${escapeHtml(p.name)}" data-pf="name" maxlength="80">
+      <input type="number" class="pr" value="${Number(p.price)}" data-pf="price" min="0" step="1" inputmode="decimal">
+      <span class="unit">₺/${escapeHtml(p.unit)}</span>
+      <button type="button" class="mini" data-pact="toggle" title="${p.is_active ? "Pasife al" : "Aktif et"}">${p.is_active ? "👁" : "🚫"}</button>
+      <button type="button" class="mini" data-pact="del" title="Sil">✕</button>
+    </div>`).join("") || `<p class="hint">${state.quoteReady ? "Kalem yok, aşağıdan ekleyin." : "Fiyat listesi tablosu henüz yok; v3 SQL dosyası çalıştırılmalı."}</p>`;
+  el.priceAdd.hidden = !state.quoteReady;
+  el.cardMarkupInput.value = state.settings.card_markup_pct ?? "0";
+}
+
+async function afterPriceChange() {
+  try { await loadStages(); } catch (error) { toast(friendlyError(error), true); }
+  renderPriceAdmin();
+  if (state.activeJobId) renderQuote();
+}
+
+async function handlePriceClick(event) {
+  const btn = event.target.closest("[data-pact]");
+  if (!btn) return;
+  const id = Number(btn.closest("[data-price]").dataset.price);
+  const item = state.priceItems.find((p) => p.id === id);
+  if (!item) return;
+  try {
+    if (btn.dataset.pact === "toggle") {
+      const { error } = await db.from("price_items").update({ is_active: !item.is_active }).eq("id", id);
+      if (error) throw error;
+    } else {
+      if (!(await askConfirm(`"${item.name}" fiyat listesinden silinecek. Eski işlerdeki kalemler durur.`, "Kalemi sil"))) return;
+      const { error } = await db.from("price_items").delete().eq("id", id);
+      if (error) throw error;
+    }
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+  await afterPriceChange();
+}
+
+async function handlePriceEdit(event) {
+  const input = event.target.closest("[data-pf]");
+  if (!input) return;
+  const id = Number(input.closest("[data-price]").dataset.price);
+  const item = state.priceItems.find((p) => p.id === id);
+  if (!item) return;
+  const patch = {};
+  if (input.dataset.pf === "name") { const name = input.value.trim(); if (!name || name === item.name) return; patch.name = name; }
+  else { const price = Number(input.value); if (!(price >= 0) || price === Number(item.price)) return; patch.price = price; }
+  const { error } = await db.from("price_items").update(patch).eq("id", id);
+  if (error) { toast(friendlyError(error), true); return; }
+  toast("Güncellendi");
+  await afterPriceChange();
+}
+
+async function addPriceItem(event) {
+  event.preventDefault();
+  const name = el.paName.value.trim();
+  const price = Number(el.paPrice.value);
+  if (!name) { toast("Kalem adı yazın", true); return; }
+  if (!(price >= 0)) { toast("Fiyat eksi olamaz", true); return; }
+  const cat = el.paCategory.value;
+  const maxSort = Math.max(0, ...state.priceItems.filter((p) => p.category === cat).map((p) => p.sort_order));
+  const { error } = await db.from("price_items").insert({ category: cat, name, unit: el.paUnit.value.trim() || "adet", price, sort_order: maxSort + 10 });
+  if (error) { toast(friendlyError(error), true); return; }
+  el.paName.value = ""; el.paPrice.value = ""; el.paUnit.value = "";
+  toast("Kalem eklendi");
+  await afterPriceChange();
+}
+
+async function saveCardMarkup() {
+  const pct = Number(String(el.cardMarkupInput.value).replace(",", "."));
+  if (!(pct >= 0 && pct <= 100)) { toast("0 ile 100 arası bir yüzde yazın", true); return; }
+  const { error } = await db.from("app_settings").upsert({ key: "card_markup_pct", value: String(pct) });
+  if (error) { toast(friendlyError(error), true); return; }
+  toast("Kart farkı kaydedildi");
+  await afterPriceChange();
 }
 
 async function afterAdminChange() {
@@ -1702,6 +2016,37 @@ el.overlay.addEventListener("click", () => closeSheets());
 
 el.stagesButton.addEventListener("click", () => { renderAdminLists(); openSheet(el.stagesDialog); });
 el.stagesClose.addEventListener("click", () => closeSheets());
+el.addQuoteItemButton.addEventListener("click", openQuotePicker);
+el.quotePickerClose.addEventListener("click", () => closeSheets());
+el.quoteCats.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-cat]");
+  if (!chip) return;
+  state.quoteCat = chip.dataset.cat;
+  renderQuoteCatalog();
+});
+el.quoteCatalog.addEventListener("click", (event) => {
+  const opt = event.target.closest("[data-price-item]");
+  if (opt) addCatalogItem(opt.dataset.priceItem);
+});
+el.quoteFree.addEventListener("submit", addFreeItem);
+el.quoteList.addEventListener("click", (event) => {
+  const del = event.target.closest("[data-del-item]");
+  if (del) { deleteQuoteItem(del.dataset.delItem); return; }
+  const q = event.target.closest("[data-qty]");
+  if (q) changeQuoteQty(q.closest("[data-item]").dataset.item, Number(q.dataset.qty));
+});
+el.quoteToPriceCash.addEventListener("click", () => quoteToPrice("cash"));
+el.quoteToPriceCard.addEventListener("click", () => quoteToPrice("card"));
+el.messageButtons.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-need]");
+  if (btn) openDateAsk(btn.dataset.need, btn.dataset.tpl);
+});
+el.dateAsk.addEventListener("submit", submitDateAsk);
+el.dateAskCancel.addEventListener("click", () => closeSheets());
+el.priceList.addEventListener("click", handlePriceClick);
+el.priceList.addEventListener("change", handlePriceEdit);
+el.priceAdd.addEventListener("submit", addPriceItem);
+el.saveMarkupButton.addEventListener("click", saveCardMarkup);
 el.stagesList.addEventListener("click", handleAdminClick);
 el.stagesList.addEventListener("change", handleAdminRename);
 el.checkItemsList.addEventListener("click", handleAdminClick);
