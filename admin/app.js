@@ -5,6 +5,7 @@ const MONEY_MODE_KEY = "kent-para-mod";
 const MONEY_STATUS_KEY = "kent-para-durum";
 const DISTRICT_KEY = "kent-ilce";
 const LAST_DISTRICT_KEY = "kent-son-ilce";
+const LAST_CREW_KEY = "kent-son-usta";
 const EXCEL_TAG = "[Excel #";
 const WARN_DAYS = 7;
 const FILE_BUCKET = "job-files";
@@ -20,6 +21,8 @@ const KIND_TO_CHECK = { sozlesme: "sozlesme_foto", abone_formu: "abone_formu", b
 const MESSAGE_TEMPLATES = [
   { key: "kesif", title: "Keşif sonrası takip", hint: "Teklif verildi, karar bekleniyor",
     text: "Merhaba {ad}, Kent Doğalgaz. Keşif sonrası ilettiğimiz teklif hakkında karar verdiyseniz bize dönebilirsiniz. Sorularınız için her zaman buradayız. İyi günler." },
+  { key: "montaj", title: "Montaj günü bilgisi", hint: "Plan tarihi ve usta otomatik eklenir",
+    text: "Merhaba {ad}, Kent Doğalgaz. Doğalgaz tesisat montajınız {plan} günü yapılacak{usta}. O gün evde bulunmanızı ve çalışılacak alanın (kombi yeri, boru güzergâhı, sayaç yeri) boş olmasını rica ederiz. Sorunuz olursa arayabilirsiniz." },
   { key: "sayac", title: "Proje onaylandı, sayaç alın", hint: "Aksa onayından sonra",
     text: "Merhaba {ad}, Kent Doğalgaz. Doğalgaz projeniz Aksa tarafından onaylandı. Sayacınızı alabilirsiniz; aldığınızda bize haber verin, gaz açma randevusu için işlemleri başlatalım." },
   { key: "randevu", title: "Randevu bilgisi", hint: "Aksa randevu günü",
@@ -48,6 +51,8 @@ const state = {
   moneySearch: "",
   district: localStorage.getItem(DISTRICT_KEY) || "all",
   summary: null,
+  calMonth: null,
+  calDay: null,
   skipPop: false,
   activeJobId: null,
   editingJobId: null,
@@ -73,6 +78,8 @@ const el = Object.fromEntries([
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
   "secMsg", "messageButtons",
   "noteInput", "addNoteButton", "timeline", "cancelJobButton", "reopenJobButton",
+  "calendarButton", "calendarView", "calendarBack", "calendarToday", "calendarShare", "calPrev", "calNext", "calTitle", "calGrid", "calDayTitle", "calAddButton", "calDayList",
+  "crewInput", "crewList", "planPicker", "planPickerDay", "planCrew", "planSearch", "planPickerList", "planPickerCancel",
   "overlay", "jobDialog", "jobDialogTitle", "confirmDialog", "confirmTitle", "confirmText", "confirmCancel", "confirmOk", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
   "fStageWrap", "fStage", "jobDialogError", "jobDialogCancel", "jobDialogSave",
   "stagePicker", "stagePickerList", "stagePickerCancel",
@@ -88,6 +95,9 @@ const shortDateFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "
 const dayFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 const dayShortFmt = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" });
 const monthFmt = new Intl.DateTimeFormat("tr-TR", { month: "long", year: "numeric" });
+const weekdayFmt = new Intl.DateTimeFormat("tr-TR", { weekday: "long" });
+const weekdayShortFmt = new Intl.DateTimeFormat("tr-TR", { weekday: "short" });
+const timeFmt = new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" });
 const numberFmt = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 const money = { format: (n) => numberFmt.format(Number(n) || 0) + " ₺" };
 
@@ -182,7 +192,10 @@ function toLocalInputValue(iso) {
 function fillTemplate(text, job) {
   const first = (job.customer_name || "").trim().split(/\s+/)[0] || "";
   const tarih = job.appointment_at ? dateFmt.format(new Date(job.appointment_at)) : "…";
-  return text.replace(/\{ad\}/g, first ? first + " Bey/Hanım" : "").replace(/\{tarih\}/g, tarih).replace(/\{kalan\}/g, money.format(job.remaining || 0));
+  const plan = job.planned_at ? `${weekdayFmt.format(fromYmd(job.planned_at))} ${dayFmt.format(fromYmd(job.planned_at))}` : "…";
+  const usta = (job.crew || "").trim() ? `, ekibimiz ${job.crew.trim()} ile gelecek` : "";
+  return text.replace(/\{ad\}/g, first ? first + " Bey/Hanım" : "").replace(/\{tarih\}/g, tarih).replace(/\{kalan\}/g, money.format(job.remaining || 0))
+    .replace(/\{plan\}/g, plan).replace(/\{usta\}/g, usta);
 }
 
 let toastTimer = null;
@@ -226,7 +239,7 @@ function activeJob() {
 }
 
 function allSheets() {
-  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.stagePicker, el.stagesDialog];
+  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.planPicker, el.stagePicker, el.stagesDialog];
 }
 
 function anySheetOpen() {
@@ -303,6 +316,8 @@ async function loadJobs() {
   renderChips();
   renderList();
   if (!el.moneyView.hidden) renderMoney();
+  if (!el.calendarView.hidden) renderCalendar();
+  renderCrewList();
   if (state.activeJobId) renderDetail();
 }
 
@@ -530,6 +545,7 @@ function showView(view) {
   el.listView.hidden = view !== "list";
   el.moneyView.hidden = view !== "money";
   el.summaryView.hidden = view !== "summary";
+  el.calendarView.hidden = view !== "calendar";
   el.detailView.hidden = view !== "detail";
   window.scrollTo(0, 0);
 }
@@ -538,6 +554,7 @@ function currentView() {
   if (!el.detailView.hidden) return "detail";
   if (!el.moneyView.hidden) return "money";
   if (!el.summaryView.hidden) return "summary";
+  if (!el.calendarView.hidden) return "calendar";
   return "list";
 }
 
@@ -669,16 +686,171 @@ function moneyShareText() {
   return [`${title} · ${dayFmt.format(new Date())}`, "", ...lines, "", `Toplam fiyat: ${money.format(t.price)}`, `Ödenen: ${money.format(t.paid)}`, `Kalan: ${money.format(t.remaining)}`, `${jobs.length} iş`].join("\n");
 }
 
-async function shareMoney() {
-  const text = moneyShareText();
+async function shareText(title, text, copiedMsg) {
   try {
-    if (navigator.share) { await navigator.share({ title: "Kalan ödemeler", text }); return; }
+    if (navigator.share) { await navigator.share({ title, text }); return; }
     await navigator.clipboard.writeText(text);
-    toast("Liste kopyalandı, WhatsApp'a yapıştırabilirsiniz");
+    toast(copiedMsg);
   } catch (error) {
     if (error?.name === "AbortError") return;
     toast("Paylaşılamadı: " + friendlyError(error), true);
   }
+}
+
+function shareMoney() {
+  return shareText("Kalan ödemeler", moneyShareText(), "Liste kopyalandı, WhatsApp'a yapıştırabilirsiniz");
+}
+
+// ---------------------------------------------------------------------------
+// Takvim: montaj planı (planned_at) + usta (crew) + Aksa randevuları
+// ---------------------------------------------------------------------------
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function fromYmd(s) { return new Date(s + "T00:00"); }
+function apptDay(job) { return job.appointment_at ? ymd(new Date(job.appointment_at)) : null; }
+function shortName(name) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0] || "—";
+}
+function dayLabel(day) { const d = fromYmd(day); return `${weekdayFmt.format(d)} ${dayFmt.format(d)}`; }
+function crewNames() {
+  return [...new Set(state.jobs.map((j) => (j.crew || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "tr"));
+}
+function renderCrewList() {
+  if (el.crewList) el.crewList.innerHTML = crewNames().map((c) => `<option value="${escapeHtml(c)}">`).join("");
+}
+function calJobs() { return state.jobs.filter((j) => j.status !== "cancelled"); }
+function plannedOn(day) {
+  return calJobs().filter((j) => j.planned_at === day)
+    .sort((a, b) => (a.crew || "").localeCompare(b.crew || "", "tr") || a.customer_name.localeCompare(b.customer_name, "tr"));
+}
+function apptOn(day) {
+  return calJobs().filter((j) => apptDay(j) === day).sort((a, b) => new Date(a.appointment_at) - new Date(b.appointment_at));
+}
+
+function openCalendar(pushHistory = true) {
+  if (pushHistory) history.pushState({ view: "calendar" }, "");
+  if (!state.calDay) state.calDay = todayStr();
+  if (!state.calMonth) { const d = fromYmd(state.calDay); d.setDate(1); state.calMonth = d; }
+  showView("calendar");
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const m = state.calMonth;
+  const today = todayStr();
+  el.calTitle.textContent = monthFmt.format(m);
+  const start = new Date(m);
+  start.setDate(1 - ((m.getDay() + 6) % 7)); // Pazartesi başlangıç
+  const cells = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const other = d.getMonth() !== m.getMonth();
+    if (i === 35 && other) break; // 6. satır tamamen sonraki aysa çizme
+    const day = ymd(d);
+    const planned = plannedOn(day);
+    const appts = apptOn(day);
+    const chips = planned.slice(0, 3).map((j) => `<span class="cal-chip${j.crew ? "" : " nocrew"}">${escapeHtml(shortName(j.customer_name))}</span>`).join("");
+    const more = planned.length > 3 ? `<span class="cal-more">+${planned.length - 3}</span>` : "";
+    const appt = appts.length ? `<span class="cal-appt" title="Aksa randevusu">🔥${appts.length > 1 ? appts.length : ""}</span>` : "";
+    const cls = ["cal-cell", other ? "other" : "", day === today ? "today" : "", day === state.calDay ? "sel" : "", planned.length ? "has" : ""].filter(Boolean).join(" ");
+    cells.push(`<button type="button" class="${cls}" data-day="${day}" aria-label="${escapeHtml(dayLabel(day))}"><span class="cal-num">${d.getDate()}${appt}</span>${chips}${more}</button>`);
+  }
+  el.calGrid.innerHTML = cells.join("");
+  renderCalDay();
+}
+
+function calRow(j, kind) {
+  const tel = phoneHref(j.phone);
+  const tpl = MESSAGE_TEMPLATES.find((t) => t.key === (kind === "plan" ? "montaj" : "randevu"));
+  const wa = whatsappHref(j.phone, fillTemplate(tpl.text, j));
+  const right = kind === "plan"
+    ? `<span class="cal-crew${j.crew ? "" : " none"}">${escapeHtml(j.crew || "usta yok")}</span>`
+    : `<span class="cal-crew appt">${timeFmt.format(new Date(j.appointment_at))}</span>`;
+  const sub = [districtOf(j), j.address, j.stage_short_name || j.stage_name].filter(Boolean).join(" · ");
+  return `<article class="money-row cal-row" data-id="${j.id}" style="border-left-color:${escapeHtml(j.stage_color)}">
+      <div class="mr-top"><span class="mr-name">${escapeHtml(j.customer_name)}</span>${right}</div>
+      <div class="mr-bottom"><span class="mr-sub">${escapeHtml(sub)}</span>
+        <span class="mr-actions">
+          ${tel ? `<a class="mr-act" href="${tel}" data-call title="Ara">📞</a>` : ""}
+          ${wa ? `<a class="mr-act" href="${wa}" target="_blank" rel="noopener" data-call title="${kind === "plan" ? "WhatsApp: montaj günü mesajı" : "WhatsApp: randevu mesajı"}">💬</a>` : ""}
+        </span></div>
+    </article>`;
+}
+
+function renderCalDay() {
+  const day = state.calDay;
+  el.calDayTitle.textContent = dayLabel(day);
+  const planned = plannedOn(day);
+  const appts = apptOn(day);
+  let html = "";
+  if (planned.length) html += `<h4 class="cal-sub">Montaj · ${planned.length} iş</h4>` + planned.map((j) => calRow(j, "plan")).join("");
+  if (appts.length) html += `<h4 class="cal-sub">Aksa randevusu · ${appts.length}</h4>` + appts.map((j) => calRow(j, "appt")).join("");
+  el.calDayList.innerHTML = html || `<p class="hint cal-empty">Bu güne plan yok.</p>`;
+}
+
+function calShiftMonth(delta) {
+  const d = new Date(state.calMonth); d.setMonth(d.getMonth() + delta);
+  state.calMonth = d;
+  renderCalendar();
+}
+
+function openPlanPicker() {
+  el.planPickerDay.textContent = dayLabel(state.calDay);
+  el.planCrew.value = localStorage.getItem(LAST_CREW_KEY) || "";
+  el.planSearch.value = "";
+  renderPlanPicker();
+  openSheet(el.planPicker);
+}
+
+function renderPlanPicker() {
+  const q = normalizeText(el.planSearch.value.trim());
+  const list = state.jobs
+    .filter((j) => j.status === "open" && !j.stage_is_terminal && j.planned_at !== state.calDay)
+    .filter((j) => !q || normalizeText(`${j.customer_name} ${j.address} ${j.district} ${j.phone}`).includes(q))
+    .sort((a, b) => (a.planned_at ? 1 : 0) - (b.planned_at ? 1 : 0) || a.customer_name.localeCompare(b.customer_name, "tr"));
+  el.planPickerList.innerHTML = list.slice(0, 80).map((j) => `
+    <button type="button" class="stage-option plan-opt" data-job="${j.id}">
+      <span class="dot" style="background:${escapeHtml(j.stage_color)}"></span>
+      <span class="po-main"><span>${escapeHtml(j.customer_name)}</span>
+        <small>${escapeHtml([districtOf(j), j.stage_short_name || j.stage_name, j.planned_at ? "planlı: " + dayShortFmt.format(fromYmd(j.planned_at)) : ""].filter(Boolean).join(" · "))}</small></span>
+    </button>`).join("") || `<p class="hint">Uygun açık iş yok.</p>`;
+}
+
+async function assignPlan(jobId) {
+  const job = state.jobs.find((j) => j.id === jobId);
+  if (!job) return;
+  const crew = el.planCrew.value.trim();
+  if (crew) localStorage.setItem(LAST_CREW_KEY, crew);
+  const params = { p_job_id: job.id, p_price: Number(job.price) || 0, p_planned_at: state.calDay, p_reminder_at: job.reminder_at || null, p_reminder_note: job.reminder_note || "" };
+  if (crew && job.crew !== undefined) params.p_crew = crew;
+  try {
+    await rpc("set_job_plan", params);
+    await closeSheets();
+    toast(`${shortName(job.customer_name)} → ${dayShortFmt.format(fromYmd(state.calDay))}${crew ? " · " + crew : ""}`);
+    await loadJobs();
+    renderCalendar();
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+function weekShareText() {
+  const d = fromYmd(state.calDay);
+  const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const lines = [];
+  for (let i = 0; i < 7; i++) {
+    const x = new Date(mon); x.setDate(mon.getDate() + i);
+    const day = ymd(x);
+    const planned = plannedOn(day), appts = apptOn(day);
+    lines.push(`${weekdayShortFmt.format(x)} ${dayShortFmt.format(x)}`);
+    if (!planned.length && !appts.length) lines.push("  —");
+    planned.forEach((j) => lines.push(`  • ${j.customer_name} · ${[districtOf(j), j.address].filter(Boolean).join(", ")} · ${j.crew || "usta yok"}`));
+    appts.forEach((j) => lines.push(`  🔥 ${timeFmt.format(new Date(j.appointment_at))} Aksa: ${j.customer_name}`));
+  }
+  return [`Montaj planı ${dayShortFmt.format(mon)} – ${dayFmt.format(sun)}`, "", ...lines].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -687,7 +859,7 @@ async function shareMoney() {
 async function openDetail(jobId, pushHistory = true) {
   state.activeJobId = jobId;
   if (pushHistory) {
-    state.returnView = currentView() === "money" ? "money" : "list";
+    state.returnView = ["money", "calendar"].includes(currentView()) ? currentView() : "list";
     history.pushState({ view: "detail", id: jobId, from: state.returnView }, "");
   }
   showView("detail");
@@ -705,6 +877,7 @@ async function openDetail(jobId, pushHistory = true) {
 function closeDetail() {
   state.activeJobId = null;
   if (state.returnView === "money") { showView("money"); renderMoney(); }
+  else if (state.returnView === "calendar") { showView("calendar"); renderCalendar(); }
   else showView("list");
 }
 
@@ -726,7 +899,7 @@ function applyHistoryState(s) {
   }
   if (s?.sheet) { history.back(); return; } // ileri tuşuyla pencere durumuna gelindi: atla
   if (s?.view === "detail" && state.jobs.some((j) => j.id === s.id)) {
-    state.returnView = s.from === "money" ? "money" : "list";
+    state.returnView = ["money", "calendar"].includes(s.from) ? s.from : "list";
     openDetail(s.id, false);
   } else if (s?.view === "money") {
     state.activeJobId = null;
@@ -734,6 +907,9 @@ function applyHistoryState(s) {
   } else if (s?.view === "summary") {
     state.activeJobId = null;
     openSummary(false);
+  } else if (s?.view === "calendar") {
+    state.activeJobId = null;
+    openCalendar(false);
   } else {
     state.activeJobId = null;
     showView("list");
@@ -799,6 +975,7 @@ function renderDetail() {
   el.paySummary.className = "section-meta" + (Number(job.remaining) > 0 ? " warn" : Number(job.price) > 0 ? " ok" : "");
   el.reminderInput.value = job.reminder_at || "";
   el.reminderNote.value = job.reminder_note || "";
+  el.crewInput.value = job.crew || "";
   if (!el.payDate.value) el.payDate.value = todayStr();
 
   // Tarihler
@@ -806,7 +983,7 @@ function renderDetail() {
   el.appointmentInput.value = toLocalInputValue(job.appointment_at);
   el.appointmentResult.hidden = !(isOpen && job.appointment_at);
   const dateBits = [];
-  if (job.planned_at) dateBits.push("montaj " + dayShortFmt.format(new Date(job.planned_at + "T00:00")));
+  if (job.planned_at) dateBits.push("montaj " + dayShortFmt.format(new Date(job.planned_at + "T00:00")) + (job.crew ? " · " + job.crew : ""));
   if (job.appointment_at) dateBits.push("Aksa " + shortDateFmt.format(new Date(job.appointment_at)));
   el.datesSummary.textContent = dateBits.join(" · ");
 
@@ -983,6 +1160,7 @@ async function savePlan(patch) {
     p_reminder_note: job.reminder_note || "",
     ...patch,
   };
+  if (job.crew === undefined) delete params.p_crew; // migration henüz çalışmadıysa usta gönderme
   try {
     await rpc("set_job_plan", params);
     toast("Kaydedildi");
@@ -1357,6 +1535,32 @@ el.moneyList.addEventListener("click", (event) => {
 }));
 el.summaryButton.addEventListener("click", () => openSummary());
 el.summaryBack.addEventListener("click", goBack);
+el.calendarButton.addEventListener("click", () => openCalendar());
+el.calendarBack.addEventListener("click", goBack);
+el.calendarToday.addEventListener("click", () => { state.calDay = todayStr(); const d = fromYmd(state.calDay); d.setDate(1); state.calMonth = d; renderCalendar(); });
+el.calendarShare.addEventListener("click", () => shareText("Montaj planı", weekShareText(), "Haftanın planı kopyalandı, WhatsApp'a yapıştırabilirsiniz"));
+el.calPrev.addEventListener("click", () => calShiftMonth(-1));
+el.calNext.addEventListener("click", () => calShiftMonth(1));
+el.calGrid.addEventListener("click", (event) => {
+  const cell = event.target.closest("[data-day]");
+  if (!cell) return;
+  state.calDay = cell.dataset.day;
+  const d = fromYmd(state.calDay);
+  if (d.getMonth() !== state.calMonth.getMonth()) { d.setDate(1); state.calMonth = d; }
+  renderCalendar();
+});
+el.calDayList.addEventListener("click", (event) => {
+  if (event.target.closest("[data-call]")) return;
+  const row = event.target.closest("[data-id]");
+  if (row) openDetail(row.dataset.id);
+});
+el.calAddButton.addEventListener("click", openPlanPicker);
+el.planPickerCancel.addEventListener("click", () => closeSheets());
+el.planSearch.addEventListener("input", renderPlanPicker);
+el.planPickerList.addEventListener("click", (event) => {
+  const opt = event.target.closest("[data-job]");
+  if (opt) assignPlan(opt.dataset.job);
+});
 
 window.addEventListener("popstate", (event) => { if (state.user) applyHistoryState(event.state); });
 history.replaceState(null, "");
@@ -1397,7 +1601,11 @@ el.paymentList.addEventListener("click", async (event) => {
   await refreshDetail();
 });
 el.saveReminderButton.addEventListener("click", () => savePlan({ p_reminder_at: el.reminderInput.value || null, p_reminder_note: el.reminderNote.value.trim() }));
-el.savePlannedButton.addEventListener("click", () => savePlan({ p_planned_at: el.plannedInput.value || null }));
+el.savePlannedButton.addEventListener("click", () => {
+  const crew = el.crewInput.value.trim();
+  if (crew) localStorage.setItem(LAST_CREW_KEY, crew);
+  savePlan({ p_planned_at: el.plannedInput.value || null, p_crew: crew });
+});
 
 el.fileKinds.addEventListener("click", (event) => {
   const chip = event.target.closest("[data-kind]");

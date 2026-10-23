@@ -47,6 +47,7 @@
           <span id="staffName" class="topbar-user"></span>
         </div>
         <div class="topbar-actions">
+          <button id="calendarButton" class="icon-btn" type="button" title="Takvim (montaj planı)">📅</button>
           <button id="summaryButton" class="icon-btn" type="button" title="Aylık özet">📊</button>
           <button id="moneyButton" class="icon-btn" type="button" title="Kalan ödemeler listesi">₺</button>
           <button id="stagesButton" class="icon-btn" type="button" title="Aşamalar" hidden>⚙</button>
@@ -110,6 +111,38 @@
     </section>
 
     <!-- Aylık özet -->
+    <!-- Takvim: montaj planı, usta -->
+    <section id="calendarView" class="view" hidden>
+      <header class="topbar">
+        <button id="calendarBack" class="icon-btn" type="button" aria-label="Geri">‹</button>
+        <div class="topbar-brand">
+          <span class="topbar-title">Takvim</span>
+          <span class="topbar-user">Montaj planı · usta · Aksa randevuları</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="calendarToday" class="icon-btn" type="button" title="Bugüne git">◎</button>
+          <button id="calendarShare" class="icon-btn" type="button" title="Haftayı paylaş / kopyala">⇪</button>
+        </div>
+      </header>
+      <div class="cal-nav">
+        <button id="calPrev" class="icon-btn" type="button" aria-label="Önceki ay">‹</button>
+        <strong id="calTitle"></strong>
+        <button id="calNext" class="icon-btn" type="button" aria-label="Sonraki ay">›</button>
+      </div>
+      <div class="cal-head"><span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span></div>
+      <div id="calGrid" class="cal-grid"></div>
+      <div class="detail-body">
+        <div class="section-card">
+          <div class="cal-day-head">
+            <h3 id="calDayTitle" class="card-title"></h3>
+            <button id="calAddButton" class="btn btn-outline" type="button">+ İş ekle</button>
+          </div>
+          <div id="calDayList" class="cal-day-list"></div>
+        </div>
+        <p class="hint">Güne dokunup "+ İş ekle" ile montajı planlayın, ustayı yazın. Satırdaki 💬 müşteriye "şu gün geliyoruz" mesajını hazırlar. ⇪ haftanın planını metin olarak kopyalar.</p>
+      </div>
+    </section>
+
     <section id="summaryView" class="view" hidden>
       <header class="topbar">
         <button id="summaryBack" class="icon-btn" type="button" aria-label="Geri">‹</button>
@@ -245,8 +278,12 @@
               <label class="grow">Montaj planı
                 <input id="plannedInput" type="date">
               </label>
-              <button id="savePlannedButton" class="btn btn-outline self-end" type="button">Kaydet</button>
+              <label class="grow">Usta / ekip
+                <input id="crewInput" type="text" list="crewList" autocomplete="off" maxlength="60" placeholder="örn. Ömer usta">
+              </label>
             </div>
+            <button id="savePlannedButton" class="btn btn-outline btn-block" type="button">Planı kaydet</button>
+            <datalist id="crewList"></datalist>
             <div class="row">
               <label class="grow">Aksa gaz açma randevusu
                 <input id="appointmentInput" type="datetime-local">
@@ -336,6 +373,20 @@
       <button type="submit" id="priceDialogSave" class="btn btn-primary">Fiyatı değiştir</button>
     </div>
   </form>
+
+  <!-- Takvim: güne iş ekle -->
+  <div id="planPicker" class="sheet" hidden>
+    <h2>Güne iş ekle</h2>
+    <p class="hint"><strong id="planPickerDay"></strong> için montaj planlanacak. Ustayı yazın, sonra işe dokunun.</p>
+    <label>Usta / ekip
+      <input id="planCrew" type="text" list="crewList" autocomplete="off" maxlength="60" placeholder="örn. Ömer usta">
+    </label>
+    <input id="planSearch" class="search" type="search" placeholder="İş ara (isim, adres)" autocomplete="off">
+    <div id="planPickerList" class="stage-picker plan-picker"></div>
+    <div class="sheet-actions">
+      <button type="button" id="planPickerCancel" class="btn btn-outline btn-block">Vazgeç</button>
+    </div>
+  </div>
 
   <!-- Emin misiniz? -->
   <div id="confirmDialog" class="sheet" hidden>
