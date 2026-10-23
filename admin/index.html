@@ -47,6 +47,7 @@
           <span id="staffName" class="topbar-user"></span>
         </div>
         <div class="topbar-actions">
+          <button id="moneyButton" class="icon-btn" type="button" title="Kalan ödemeler listesi">₺</button>
           <button id="stagesButton" class="icon-btn" type="button" title="Aşamalar" hidden>⚙</button>
           <button id="logoutButton" class="icon-btn" type="button" title="Çıkış">⎋</button>
         </div>
@@ -62,6 +63,34 @@
       <p id="emptyState" class="empty" hidden>Kayıt yok.</p>
 
       <button id="newJobButton" class="fab" type="button" aria-label="Yeni iş">＋ Yeni iş</button>
+    </section>
+
+    <!-- Kalan ödemeler (toplu liste) -->
+    <section id="moneyView" class="view" hidden>
+      <header class="topbar">
+        <button id="moneyBack" class="icon-btn" type="button" aria-label="Geri">‹</button>
+        <div class="topbar-brand">
+          <span class="topbar-title">Kalan ödemeler</span>
+          <span class="topbar-user">Tüm işler, tek listede</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="moneyShare" class="icon-btn" type="button" title="Listeyi paylaş / kopyala">⇪</button>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <input id="moneySearch" class="search" type="search" placeholder="İsim, adres ara" autocomplete="off">
+      </div>
+      <div id="moneyMode" class="chips" role="tablist">
+        <button type="button" class="chip active" data-mode="debt">Borcu olanlar</button>
+        <button type="button" class="chip" data-mode="all">Hepsi</button>
+        <button type="button" class="chip" data-mode="paid">Ödemesi biten</button>
+      </div>
+
+      <div id="moneySummary" class="money-summary"></div>
+      <p id="moneyCount" class="money-count"></p>
+      <div id="moneyList" class="money-list"></div>
+      <p id="moneyEmpty" class="empty" hidden>Kayıt yok.</p>
     </section>
 
     <!-- Detay -->

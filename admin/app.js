@@ -35,6 +35,9 @@ const state = {
   files: [],
   filter: localStorage.getItem(FILTER_KEY) || "open",
   search: "",
+  returnView: "list",
+  moneyMode: "debt",
+  moneySearch: "",
   activeJobId: null,
   editingJobId: null,
   fileKind: "sozlesme",
@@ -46,6 +49,7 @@ const el = Object.fromEntries([
   "authGate", "loginForm", "loginUsername", "loginPassword", "loginError", "loginButton",
   "app", "listView", "detailView", "staffName", "stagesButton", "logoutButton",
   "searchInput", "stageChips", "syncStatus", "jobList", "emptyState", "newJobButton",
+  "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
   "backButton", "detailTitle", "detailNo", "editJobButton", "callLink", "waLink", "mapLink",
   "detailAddress", "detailNote", "alertStrip", "stageCard", "stageName", "stageSince", "statusBanner",
   "nextStageButton", "pickStageButton",
@@ -226,6 +230,7 @@ async function loadJobs() {
   el.syncStatus.textContent = "";
   renderChips();
   renderList();
+  if (!el.moneyView.hidden) renderMoney();
   if (state.activeJobId) renderDetail();
 }
 
@@ -340,11 +345,112 @@ function renderList() {
 }
 
 // ---------------------------------------------------------------------------
+// Kalan ödemeler listesi (tüm işler, toplamlarla)
+// ---------------------------------------------------------------------------
+function moneyJobs() {
+  const q = normalizeText(state.moneySearch.trim());
+  return state.jobs
+    .filter((job) => {
+      if (job.status === "cancelled") return false;
+      const remaining = Number(job.remaining) || 0;
+      const price = Number(job.price) || 0;
+      if (state.moneyMode === "debt" && !(remaining > 0)) return false;
+      if (state.moneyMode === "paid" && !(price > 0 && remaining <= 0)) return false;
+      if (!q) return true;
+      return normalizeText(`${job.customer_name} ${job.phone} ${job.address} ${job.district} ${job.note} #${job.job_no}`).includes(q);
+    })
+    .sort((a, b) => (Number(b.remaining) || 0) - (Number(a.remaining) || 0) || a.customer_name.localeCompare(b.customer_name, "tr"));
+}
+
+function moneyTotals(jobs) {
+  return jobs.reduce((t, j) => {
+    t.price += Number(j.price) || 0;
+    t.paid += Number(j.paid_total) || 0;
+    t.remaining += Number(j.remaining) || 0;
+    return t;
+  }, { price: 0, paid: 0, remaining: 0 });
+}
+
+function renderMoney() {
+  const jobs = moneyJobs();
+  const t = moneyTotals(jobs);
+  el.moneySummary.innerHTML = `
+    <div class="money-tile"><span>Toplam fiyat</span><strong>${escapeHtml(money.format(t.price))}</strong></div>
+    <div class="money-tile"><span>Ödenen</span><strong>${escapeHtml(money.format(t.paid))}</strong></div>
+    <div class="money-tile kalan"><span>Kalan</span><strong>${escapeHtml(money.format(t.remaining))}</strong></div>`;
+  const debtCount = jobs.filter((j) => Number(j.remaining) > 0).length;
+  el.moneyCount.textContent = jobs.length
+    ? `${jobs.length} iş${state.moneyMode === "all" ? ` · ${debtCount} tanesinde borç var` : ""}`
+    : "";
+  el.moneyMode.querySelectorAll("[data-mode]").forEach((c) => c.classList.toggle("active", c.dataset.mode === state.moneyMode));
+  el.moneyEmpty.hidden = jobs.length > 0;
+  el.moneyList.innerHTML = jobs.map((job) => {
+    const price = Number(job.price) || 0;
+    const remaining = Number(job.remaining) || 0;
+    const sub = price > 0
+      ? `Fiyat ${money.format(price)} · Ödenen ${money.format(job.paid_total || 0)}`
+      : "Fiyat girilmedi";
+    const right = price <= 0
+      ? '<span class="mr-kalan none">—</span>'
+      : remaining > 0
+        ? `<span class="mr-kalan">${escapeHtml(money.format(remaining))}</span>`
+        : '<span class="mr-kalan ok">✓ Ödendi</span>';
+    return `
+      <button type="button" class="money-row" data-id="${job.id}" style="border-left-color:${escapeHtml(job.stage_color)}">
+        <span class="mr-main">
+          <span class="mr-name">${escapeHtml(job.customer_name)} <small>#${job.job_no}</small></span>
+          <span class="mr-sub">${escapeHtml(sub)}</span>
+          <span class="mr-sub">${escapeHtml([job.status === "cancelled" ? "İptal" : job.stage_short_name || job.stage_name, job.district, job.reminder_at ? "🔔 " + dayShortFmt.format(new Date(job.reminder_at + "T00:00")) : ""].filter(Boolean).join(" · "))}</span>
+        </span>
+        ${right}
+      </button>`;
+  }).join("");
+}
+
+function openMoney() {
+  el.listView.hidden = true;
+  el.moneyView.hidden = false;
+  window.scrollTo(0, 0);
+  renderMoney();
+}
+
+function closeMoney() {
+  el.moneyView.hidden = true;
+  el.listView.hidden = false;
+}
+
+function moneyShareText() {
+  const jobs = moneyJobs();
+  const t = moneyTotals(jobs);
+  const title = { debt: "Kalan ödemeler", all: "Tüm işler ödeme durumu", paid: "Ödemesi biten işler" }[state.moneyMode];
+  const lines = jobs.map((j) => {
+    const remaining = Number(j.remaining) || 0;
+    const price = Number(j.price) || 0;
+    return `• ${j.customer_name}: ${price > 0 ? (remaining > 0 ? "kalan " + money.format(remaining) : "ödendi") : "fiyat yok"}`;
+  });
+  return [`${title} · ${dayFmt.format(new Date())}`, "", ...lines, "", `Toplam fiyat: ${money.format(t.price)}`, `Ödenen: ${money.format(t.paid)}`, `Kalan: ${money.format(t.remaining)}`, `${jobs.length} iş`].join("\n");
+}
+
+async function shareMoney() {
+  const text = moneyShareText();
+  try {
+    if (navigator.share) { await navigator.share({ title: "Kalan ödemeler", text }); return; }
+    await navigator.clipboard.writeText(text);
+    toast("Liste kopyalandı, WhatsApp'a yapıştırabilirsiniz");
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    toast("Paylaşılamadı: " + friendlyError(error), true);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Detay
 // ---------------------------------------------------------------------------
 async function openDetail(jobId) {
   state.activeJobId = jobId;
+  state.returnView = el.moneyView.hidden ? "list" : "money";
   el.listView.hidden = true;
+  el.moneyView.hidden = true;
   el.detailView.hidden = false;
   window.scrollTo(0, 0);
   state.events = []; state.checks = []; state.payments = []; state.files = [];
@@ -361,7 +467,8 @@ async function openDetail(jobId) {
 function closeDetail() {
   state.activeJobId = null;
   el.detailView.hidden = true;
-  el.listView.hidden = false;
+  if (state.returnView === "money") { el.moneyView.hidden = false; renderMoney(); }
+  else el.listView.hidden = false;
 }
 
 function renderDetail() {
@@ -863,6 +970,21 @@ el.jobList.addEventListener("click", (event) => {
   if (card) openDetail(card.dataset.id);
 });
 el.newJobButton.addEventListener("click", () => openJobDialog());
+
+el.moneyButton.addEventListener("click", openMoney);
+el.moneyBack.addEventListener("click", closeMoney);
+el.moneyShare.addEventListener("click", shareMoney);
+el.moneySearch.addEventListener("input", () => { state.moneySearch = el.moneySearch.value; renderMoney(); });
+el.moneyMode.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-mode]");
+  if (!chip) return;
+  state.moneyMode = chip.dataset.mode;
+  renderMoney();
+});
+el.moneyList.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-id]");
+  if (row) openDetail(row.dataset.id);
+});
 
 el.backButton.addEventListener("click", closeDetail);
 el.editJobButton.addEventListener("click", () => openJobDialog(activeJob()));

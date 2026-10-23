@@ -38,6 +38,16 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 - "Bugün" filtresi: Aksa randevusu bugün/geçmiş, hatırlatma günü gelmiş, montaj planı bugün.
 - Aksa randevu sonucu: "Gaz açıldı" (aşamayı ilerletir) / "Açılamadı" (sebep yazılır, randevu silinir, tekrar girilir).
 - Müşteriye hazır WhatsApp mesajları (keşif takibi, sayaç al, randevu bilgisi, kalan ödeme). wa.me bağlantısı, uygulama göndermez, WhatsApp'ta açar.
+- Kalan ödemeler listesi (liste ekranında üstteki ₺ düğmesi): tüm işler tek listede, en çok kalanı olan üstte; üstte toplam fiyat / ödenen / kalan. "Borcu olanlar / Hepsi / Ödemesi biten" seçimi ve arama; toplamlar o an görünen işlere göre hesaplanır. ⇪ ile liste metin olarak paylaşılır (WhatsApp'a yapıştırmak için). Satıra dokununca işin detayı açılır, geri gelince liste kaldığı yerden devam eder.
+
+## Excel'den toplu aktarım (Soma iş listesi)
+
+`SOMA İŞ LİSTESİ.xlsx` için üretilmiş SQL dosyası repoda DEĞİLDİR (repo herkese açık; dosyada müşteri telefonları var). Dosya Berk'in masaüstünde durur ve Supabase `SQL Editor`'de bir kez çalıştırılır; ikinci çalıştırma kendini durdurur. Eşleme:
+
+- `MÜŞTERİ` sayfası (SN 1-127) → `jobs`: ad soyad, telefon (`0532 111 22 33` biçimine çevrilir), ilçe (boşsa Soma), adres `Mah. + Sk./Cd. + No + daire`, not alanında `İçerik`, 2. telefon, kolon birimi ve `[Excel #SN]` etiketi.
+- `ÖDEME` sayfası → `jobs.price` (TUTAR) ve taksit sütunları tek tek `payments` (yöntem "Diğer", tarih aktarım günü, not "Excel aktarımı · n. ödeme"). Kalan uygulamada hesaplanır.
+- `PROJE` sayfası → VİDEO `+` ise kontrol listesinde "Montaj videosu" işaretli ve aşama **Montaj yapıldı**; ÇİZİM `+` ise aşama **Proje Aksa'ya gönderildi**; ABONELİK `+` ise "Abone formu alındı" işaretli. Diğerleri **Sözleşme yapıldı** ile açılır.
+- `MÜŞTERİ (2)`, `BİLGİ`, `Sayfa10`, `Sayfa11` eski/ara kopyalar; aktarılmaz.
 
 Depolama: ücretsiz planda 1 GB / dosya başına 50 MB / ay 5 GB indirme. Pro (25 $/ay) 100 GB.
 

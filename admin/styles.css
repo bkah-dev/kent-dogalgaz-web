@@ -326,3 +326,29 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--n
 
 .timeline li.payment::before { background: #b45309; }
 .timeline li.reminder::before, .timeline li.file::before, .timeline li.check::before { background: var(--muted); }
+
+/* ---------- Kalan ödemeler listesi ---------- */
+.money-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 14px 6px; }
+.money-tile {
+  background: var(--paper); border-radius: 14px; box-shadow: var(--shadow);
+  padding: 10px 10px 9px; display: grid; gap: 2px; min-width: 0;
+}
+.money-tile span { font-size: .7rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.money-tile strong { font-size: .98rem; font-weight: 800; white-space: nowrap; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; }
+.money-tile.kalan { border-bottom: 3px solid var(--red); }
+.money-tile.kalan strong { color: var(--red); }
+.money-count { margin: 0; padding: 0 14px 8px; font-size: .85rem; color: var(--muted); font-weight: 600; min-height: 1.2em; }
+.money-list { display: grid; gap: 6px; padding: 0 14px 40px; }
+.money-row {
+  width: 100%; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px 8px 10px;
+  background: var(--paper); border: 0; border-left: 5px solid var(--navy); border-radius: 12px;
+  box-shadow: var(--shadow); text-align: left; cursor: pointer;
+}
+.money-row:active { background: #fdfaf4; }
+.mr-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.mr-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mr-name small { color: var(--muted); font-weight: 600; }
+.mr-sub { font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr-kalan { flex: 0 0 auto; font-weight: 800; color: var(--red); white-space: nowrap; font-size: 1.02rem; }
+.mr-kalan.ok { color: var(--green); font-size: .9rem; }
+.mr-kalan.none { color: var(--muted); font-weight: 600; }
