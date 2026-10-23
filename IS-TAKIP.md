@@ -34,7 +34,7 @@ Personel ekranı `admin/` adresindedir (`https://kentmekanikdogalgaz.com/admin/`
 
 - Kontrol listesi (sözleşme fotoğrafı, abone formu, proje PDF, montaj videosu WhatsApp'a gönderildi, kombi barkodu, servis randevusu, sayaç, camcı, elektrikçi). Admin ekler/çıkarır.
 - Ödeme: toplam fiyat, ödemeler (nakit/havale/kart), kalan, ödeme sözü tarihi + hatırlatma notu. "Kalan ödeme" filtresi.
-- Dosyalar: fotoğraf ve PDF, Supabase Storage `job-files` (özel bucket). Fotoğraf telefonda 1600 px JPEG'e küçültülür (~400 KB). Video yüklenmez, WhatsApp'ta kalır.
+- Dosyalar: fotoğraf ve PDF, Supabase Storage `job-files` (özel bucket). Fotoğraf telefonda 1600 px JPEG'e küçültülür (~400 KB). Video yüklenmez, WhatsApp'ta kalır. Üç yol: "Fotoğraf çek", "Dosya seç" ve "Yapıştır" (WhatsApp'ta fotoğrafa uzun bas → Kopyala → uygulamada Yapıştır; telefon ilk seferde pano izni sorar). Bilgisayarda detay ekranındayken Ctrl+V de çalışır.
 - "Bugün" filtresi: Aksa randevusu bugün/geçmiş, hatırlatma günü gelmiş, montaj planı bugün.
 - Aksa randevu sonucu: "Gaz açıldı" (aşamayı ilerletir) / "Açılamadı" (sebep yazılır, randevu silinir, tekrar girilir).
 - Müşteriye hazır WhatsApp mesajları (keşif takibi, sayaç al, randevu bilgisi, kalan ödeme). wa.me bağlantısı, uygulama göndermez, WhatsApp'ta açar.

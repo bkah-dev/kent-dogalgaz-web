@@ -68,7 +68,7 @@ const el = Object.fromEntries([
   "secChecks", "checksSummary", "checklist",
   "secPay", "paySummary", "priceInput", "savePriceButton", "paidTotal", "remainingTotal",
   "payAmount", "payMethod", "payDate", "addPaymentButton", "paymentList", "reminderInput", "reminderNote", "saveReminderButton",
-  "secFiles", "filesSummary", "fileKinds", "cameraInput", "fileInput", "uploadStatus", "fileList",
+  "secFiles", "filesSummary", "fileKinds", "cameraInput", "fileInput", "pasteButton", "uploadStatus", "fileList",
   "secDates", "datesSummary", "plannedInput", "savePlannedButton", "appointmentInput", "saveAppointmentButton",
   "appointmentResult", "apptOpenedButton", "apptFailedButton",
   "secMsg", "messageButtons",
@@ -1000,6 +1000,39 @@ async function uploadFile(original) {
   }
 }
 
+function blobToFile(blob, kind) {
+  const ext = (blob.type.split("/")[1] || "png").replace("jpeg", "jpg");
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+  return new File([blob], `${kind}_${stamp}.${ext}`, { type: blob.type });
+}
+
+async function pasteFromClipboard() {
+  if (!navigator.clipboard?.read) { toast("Bu tarayıcıda yapıştırma desteklenmiyor; Dosya seç kullanın", true); return; }
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find((t) => t.startsWith("image/") || t === "application/pdf");
+      if (!type) continue;
+      const blob = await item.getType(type);
+      await uploadFile(blobToFile(blob, state.fileKind));
+      return;
+    }
+    toast("Panoda fotoğraf yok. Önce WhatsApp'ta fotoğrafa uzun basıp Kopyala deyin", true);
+  } catch (error) {
+    if (error?.name === "NotAllowedError") toast("Pano izni verilmedi", true);
+    else toast(friendlyError(error), true);
+  }
+}
+
+document.addEventListener("paste", (event) => {
+  if (!state.user || currentView() !== "detail" || anySheetOpen()) return;
+  if (event.target?.matches?.("input, textarea, select")) return;
+  const file = [...(event.clipboardData?.files || [])].find((f) => f.type.startsWith("image/") || f.type === "application/pdf");
+  if (!file) return;
+  event.preventDefault();
+  uploadFile(file.name ? file : blobToFile(file, state.fileKind));
+});
+
 async function openFile(fileId) {
   const f = state.files.find((x) => x.id === Number(fileId));
   if (!f) return;
@@ -1303,6 +1336,7 @@ el.fileKinds.addEventListener("click", (event) => {
 });
 el.cameraInput.addEventListener("change", () => uploadFile(el.cameraInput.files[0]));
 el.fileInput.addEventListener("change", () => uploadFile(el.fileInput.files[0]));
+el.pasteButton.addEventListener("click", pasteFromClipboard);
 el.fileList.addEventListener("click", (event) => {
   const open = event.target.closest("[data-open-file]");
   if (open) { event.preventDefault(); openFile(open.dataset.openFile); return; }
