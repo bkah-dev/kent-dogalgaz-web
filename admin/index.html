@@ -423,6 +423,18 @@
     <label>Not
       <textarea id="fNote" rows="2" maxlength="500"></textarea>
     </label>
+    <div id="fPhotosWrap" class="photo-field">
+      <span class="block-label">Sözleşme fotoğrafı</span>
+      <div class="row">
+        <label class="btn btn-outline grow file-btn">📷 Fotoğraf çek
+          <input id="fPhotoCamera" type="file" accept="image/*" capture="environment" hidden>
+        </label>
+        <label class="btn btn-outline grow file-btn">🖼️ Galeriden seç
+          <input id="fPhotoPick" type="file" accept="image/*" multiple hidden>
+        </label>
+      </div>
+      <div id="fPhotoList" class="photo-thumbs"></div>
+    </div>
     <label id="fStageWrap">Başlangıç aşaması
       <select id="fStage"></select>
     </label>

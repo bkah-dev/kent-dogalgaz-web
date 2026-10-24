@@ -86,6 +86,7 @@ const state = {
   activeJobId: null,
   editingJobId: null,
   fileKind: "sozlesme",
+  pendingPhotos: [],
   channel: null,
   reloadTimer: null,
 };
@@ -111,7 +112,7 @@ const el = Object.fromEntries([
   "calendarButton", "calendarView", "calendarBack", "calendarToday", "calendarShare", "calPrev", "calNext", "calTitle", "calGrid", "calDayTitle", "calAddButton", "calDayList",
   "crewInput", "crewList", "planPicker", "planPickerDay", "planCrew", "planSearch", "planPickerList", "planPickerCancel",
   "overlay", "jobDialog", "jobDialogTitle", "confirmDialog", "confirmTitle", "confirmText", "confirmCancel", "confirmOk", "priceDialog", "priceDialogOld", "priceDialogNew", "priceDialogReason", "priceDialogError", "priceDialogCancel", "priceDialogSave", "fName", "fPhone", "fDistrict", "fAddress", "fNote",
-  "fStageWrap", "fStage", "jobDialogError", "jobDialogCancel", "jobDialogSave",
+  "fStageWrap", "fStage", "fPhotosWrap", "fPhotoCamera", "fPhotoPick", "fPhotoList", "jobDialogError", "jobDialogCancel", "jobDialogSave",
   "stagePicker", "stagePickerList", "stagePickerCancel",
   "stagesDialog", "stagesList", "checkItemsList", "stagesClose",
   "secQuote", "quoteSummary", "quoteList", "addQuoteItemButton", "quoteTotals", "quoteActions", "quoteToPriceCash", "quoteToPriceCard",
@@ -1288,11 +1289,12 @@ async function toggleCheck(itemId) {
   }
 }
 
-async function autoTickForKind(kind) {
+async function autoTickForKind(kind, jobId = state.activeJobId) {
   const key = KIND_TO_CHECK[kind];
   const item = key ? state.checkItems.find((i) => i.key === key && i.is_active) : null;
-  if (!item || state.checks.some((c) => c.item_id === item.id)) return;
-  await db.from("job_checks").insert({ job_id: state.activeJobId, item_id: item.id, done_by: state.user.id });
+  if (!item) return;
+  if (jobId === state.activeJobId && state.checks.some((c) => c.item_id === item.id)) return;
+  await db.from("job_checks").insert({ job_id: jobId, item_id: item.id, done_by: state.user.id });
 }
 
 // ---------------------------------------------------------------------------
@@ -1396,24 +1398,28 @@ async function compressImage(file) {
   }
 }
 
+// Dosyayı Storage'a koyar; dosya satırı, kontrol listesi işareti ve geçmiş kaydı yazar.
+async function storeJobFile(jobId, kind, file) {
+  const safeName = file.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-80) || "dosya";
+  const path = `${jobId}/${Date.now()}_${safeName}`;
+  const { error: upErr } = await db.storage.from(FILE_BUCKET).upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
+  if (upErr) throw upErr;
+  const { error: rowErr } = await db.from("job_files").insert({ job_id: jobId, kind, path, name: file.name, size: file.size, mime: file.type || "", created_by: state.user.id });
+  if (rowErr) throw rowErr;
+  await autoTickForKind(kind, jobId);
+  await db.from("job_events").insert({ job_id: jobId, kind: "file", note: `Dosya eklendi: ${KIND_LABELS[kind]} · ${file.name}`, created_by: state.user.id });
+}
+
 async function uploadFile(original) {
   if (!original) return;
   if (!original.type.startsWith("image/") && original.type !== "application/pdf") { toast("Sadece fotoğraf veya PDF yüklenebilir", true); return; }
   el.uploadStatus.textContent = "Hazırlanıyor…";
   const file = await compressImage(original);
   if (file.size > MAX_FILE_BYTES) { el.uploadStatus.textContent = ""; toast("Dosya 50 MB'tan büyük", true); return; }
-  const jobId = state.activeJobId;
-  const safeName = file.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]+/g, "_").slice(-80) || "dosya";
-  const path = `${jobId}/${Date.now()}_${safeName}`;
   el.uploadStatus.textContent = `Yükleniyor: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)…`;
   document.querySelectorAll(".file-btn").forEach((b) => b.classList.add("busy"));
   try {
-    const { error: upErr } = await db.storage.from(FILE_BUCKET).upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
-    if (upErr) throw upErr;
-    const { error: rowErr } = await db.from("job_files").insert({ job_id: jobId, kind: state.fileKind, path, name: file.name, size: file.size, mime: file.type || "", created_by: state.user.id });
-    if (rowErr) throw rowErr;
-    await autoTickForKind(state.fileKind);
-    await db.from("job_events").insert({ job_id: jobId, kind: "file", note: `Dosya eklendi: ${KIND_LABELS[state.fileKind]} · ${file.name}`, created_by: state.user.id });
+    await storeJobFile(state.activeJobId, state.fileKind, file);
     el.uploadStatus.textContent = "";
     toast("Dosya yüklendi");
     await refreshDetail();
@@ -1498,11 +1504,57 @@ function openJobDialog(job = null) {
   el.fNote.value = job?.note || "";
   el.jobDialogError.textContent = "";
   el.fStageWrap.hidden = Boolean(job);
+  el.fPhotosWrap.hidden = Boolean(job);
+  clearPendingPhotos();
   if (!job) {
     el.fStage.innerHTML = activeStages().filter((s) => !s.is_terminal).map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
   }
   openSheet(el.jobDialog);
   setTimeout(() => el.fName.focus(), 50);
+}
+
+// Yeni işte çekilen sözleşme fotoğrafları iş kaydedilince "Sözleşme" olarak yüklenir.
+function addPendingPhotos(files) {
+  const images = [...files].filter((f) => f.type.startsWith("image/"));
+  if (!images.length) return;
+  state.pendingPhotos.push(...images.map((file) => ({ file, url: URL.createObjectURL(file) })));
+  // Sözleşme fotoğrafı olan iş en az "Sözleşme yapıldı" aşamasından başlar.
+  const contract = activeStages().find((s) => s.key === "sozlesme");
+  const chosen = state.stages.find((s) => s.id === Number(el.fStage.value));
+  if (contract && chosen && chosen.sort_order < contract.sort_order) el.fStage.value = String(contract.id);
+  renderPendingPhotos();
+}
+
+function renderPendingPhotos() {
+  el.fPhotoList.innerHTML = state.pendingPhotos.map((p, i) => `<div class="photo-thumb">
+    <img src="${p.url}" alt="Sözleşme fotoğrafı ${i + 1}">
+    <button type="button" data-remove="${i}" aria-label="Fotoğrafı çıkar">×</button>
+  </div>`).join("");
+}
+
+function clearPendingPhotos() {
+  state.pendingPhotos.forEach((p) => URL.revokeObjectURL(p.url));
+  state.pendingPhotos = [];
+  renderPendingPhotos();
+}
+
+// Yüklenemeyen fotoğraf sayısını döner; iş yine de açılmış olur.
+async function uploadPendingPhotos(jobId) {
+  const photos = state.pendingPhotos;
+  let failed = 0;
+  for (const [i, p] of photos.entries()) {
+    el.jobDialogSave.textContent = `Fotoğraf ${i + 1}/${photos.length}…`;
+    try {
+      const file = await compressImage(p.file);
+      if (file.size > MAX_FILE_BYTES) throw new Error("Dosya 50 MB'tan büyük");
+      await storeJobFile(jobId, "sozlesme", file);
+    } catch (error) {
+      console.warn("sözleşme fotoğrafı", error);
+      failed += 1;
+    }
+  }
+  el.jobDialogSave.textContent = "Kaydet";
+  return failed;
 }
 
 async function saveJobDialog(event) {
@@ -1525,7 +1577,9 @@ async function saveJobDialog(event) {
       await refreshDetail();
     } else {
       const id = await rpc("create_job", { ...payload, p_stage_id: Number(el.fStage.value) });
-      toast("İş açıldı");
+      const failed = id ? await uploadPendingPhotos(id) : state.pendingPhotos.length;
+      toast(failed ? `İş açıldı ama ${failed} fotoğraf yüklenemedi; Dosyalar'dan tekrar ekleyin` : "İş açıldı", failed > 0);
+      clearPendingPhotos();
       await closeSheets();
       await loadJobs();
       if (id) openDetail(id);
@@ -2169,6 +2223,15 @@ el.reopenJobButton.addEventListener("click", async () => {
 
 el.jobDialog.addEventListener("submit", saveJobDialog);
 el.jobDialogCancel.addEventListener("click", () => closeSheets());
+el.fPhotoCamera.addEventListener("change", () => { addPendingPhotos(el.fPhotoCamera.files); el.fPhotoCamera.value = ""; });
+el.fPhotoPick.addEventListener("change", () => { addPendingPhotos(el.fPhotoPick.files); el.fPhotoPick.value = ""; });
+el.fPhotoList.addEventListener("click", (event) => {
+  const btn = event.target.closest("[data-remove]");
+  if (!btn) return;
+  const [removed] = state.pendingPhotos.splice(Number(btn.dataset.remove), 1);
+  if (removed) URL.revokeObjectURL(removed.url);
+  renderPendingPhotos();
+});
 el.overlay.addEventListener("click", () => closeSheets());
 
 el.stagesButton.addEventListener("click", () => { renderAdminLists(); openSheet(el.stagesDialog); });
