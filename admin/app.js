@@ -212,9 +212,25 @@ function whatsappHref(phone, text = "") {
   return `https://wa.me/90${d}${text ? "?text=" + encodeURIComponent(text) : ""}`;
 }
 
+const MANISA_DISTRICTS = ["ahmetli", "akhisar", "alaşehir", "demirci", "gölmarmara", "gördes", "kırkağaç", "köprübaşı", "kula", "manisa", "salihli", "sarıgöl", "saruhanlı", "selendi", "soma", "şehzadeler", "turgutlu", "yunusemre"];
+
+// Yol tarifi. Adreste ya da notta harita linki veya koordinat varsa o kullanılır.
+// Yoksa daire/kat çıkarılır, il ve ülke eklenir: Google "No 5 Daire 3, Soma" gibi adresi bulamıyor.
 function mapsHref(job) {
-  const q = [job.address, job.district].filter(Boolean).join(", ");
-  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : "";
+  const text = `${job.address || ""} ${job.note || ""}`;
+  const link = text.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.apple\.com)\S*/i);
+  if (link) return link[0];
+  const coords = text.match(/(-?\d{1,2}\.\d{4,})\s*,\s*(-?\d{1,3}\.\d{4,})/);
+  if (coords) return `https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[2]}`;
+  const street = (job.address || "")
+    .replace(/(no\s*[:.]?\s*\d+[a-zçğıöşü]?)\s*\/\s*\d+/giu, "$1")
+    .replace(/(?:daire|kat)\s*[:.]?\s*\d+[a-zçğıöşü]?|(?<![\p{L}])[dk]\s*[:.]\s*\d+[a-zçğıöşü]?/giu, "")
+    .replace(/\s*,(\s*,)+/g, ",").replace(/\s{2,}/g, " ").replace(/^[\s,]+|[\s,]+$/g, "");
+  if (!street && !job.district) return "";
+  const district = (job.district || "").trim();
+  const region = MANISA_DISTRICTS.includes(district.toLocaleLowerCase("tr")) && district.toLocaleLowerCase("tr") !== "manisa" ? [district, "Manisa"] : [district];
+  const q = [street, ...region, "Türkiye"].filter(Boolean).join(", ");
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`;
 }
 
 function toLocalInputValue(iso) {
