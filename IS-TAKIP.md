@@ -95,6 +95,33 @@ Giriş ekranına sadece `osman` yazılır; uygulama uzantıyı kendisi ekler.
 
 Aşama değişimi, randevu, iptal ve bilgi düzenleme RPC fonksiyonlarıyla yapılır; iş ve geçmiş kaydı tek işlemde yazılır. Tüm tablolar RLS ile korunur, yalnızca `staff_members`'taki hesaplar okuyup yazabilir.
 
+## Bildirimler (Web Push)
+
+Uygulama olmadan telefona bildirim: iPhone'da (iOS 16.4+) yalnızca **ana ekrana eklenmiş** uygulamada çalışır, Android/Chrome'da doğrudan çalışır. Her akşam 19:00'da yarının, her sabah 08:00'de bugünün iş günleri / Aksa randevuları / ödeme sözleri (`reminder_at`) / hatırlatmaları gönderilir. Bildirime dokununca ilgili iş açılır ve hazır WhatsApp mesajı vurgulanır (`/admin?job=<id>&tpl=<şablon>`). Admin her şeyi alır; `staff` rolü yalnızca `crew` alanında kendi adı geçen iş günlerini alır. Aynı gün aynı iş aynı kişiye ikinci kez gitmez (`push_log`).
+
+Parçalar: `sw.js` (kökte; kapsam `/admin`), `admin/app.js` bildirim bölümü, `supabase/migrations/20261028120000_bildirim.sql` (`push_subscriptions`, `push_log`, pg_cron), `supabase/functions/push-reminders` (gönderici), `supabase/functions/_shared/webpush.js` (bağımlılıksız Web Push: VAPID + aes128gcm, Node ve Deno'da aynı dosya).
+
+Kurulum (bir kez):
+
+1. Anahtar üret: `node scripts/push-keys.mjs`. Çıkan **public** değeri `admin/supabase-config.js` içindeki `vapidPublicKey` alanına yaz. **Private** değer repoya girmez (repo herkese açık).
+2. Supabase CLI ile giriş ve fonksiyon yayını (proje kökünde):
+   ```
+   npx supabase login
+   npx supabase secrets set --project-ref bluvpmkvvioezdwfivbr VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:info@kentmekanikdogalgaz.com CRON_SECRET=<uzun rastgele metin>
+   npx supabase functions deploy push-reminders --project-ref bluvpmkvvioezdwfivbr
+   ```
+   (`supabase/config.toml` içinde `verify_jwt = false`; yetki fonksiyonun içinde `x-cron-secret` ve kullanıcı JWT'si ile kontrol edilir.)
+3. SQL Editor'de önce Vault sırrı: `select vault.create_secret('<aynı CRON_SECRET>', 'push_cron_secret');` sonra `20261028120000_bildirim.sql` dosyasını çalıştır (pg_cron + pg_net etkinleşir, iki zamanlı iş kurulur).
+4. Push et; Vercel yayınlar. Telefonda: Safari › Paylaş › Ana Ekrana Ekle › uygulamayı ana ekrandan aç › menü › 🔔 Bildirimler › **Bildirimleri aç** › **Test bildirimi gönder**.
+
+Elle tetikleme / kontrol (gönderim yapmadan ne gideceğini görmek için `dry`):
+```
+curl -X POST https://bluvpmkvvioezdwfivbr.supabase.co/functions/v1/push-reminders -H "x-cron-secret: <CRON_SECRET>" -H "content-type: application/json" -d '{"slot":"evening","dry":true}'
+```
+Zamanlayıcı durumu: `select * from cron.job;` ve `select * from cron.job_run_details order by start_time desc limit 10;`. Gönderim günlüğü: `select * from public.push_log order by created_at desc limit 50;`. Ölü abonelikler (404/410) otomatik silinir.
+
+Tek bir cihaza elle test (Edge Function'sız): `VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... node scripts/push-send.mjs sub.json "Başlık" "Metin"`.
+
 ## Ücretsiz plan notu
 
 Supabase ücretsiz projeler 7 gün hiç kullanılmazsa duraklatılır; panelden "Restore" ile açılır, veri kaybolmaz.

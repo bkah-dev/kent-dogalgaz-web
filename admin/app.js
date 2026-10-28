@@ -6,6 +6,7 @@ const MONEY_STATUS_KEY = "kent-para-durum";
 const DISTRICT_KEY = "kent-ilce";
 const LAST_DISTRICT_KEY = "kent-son-ilce";
 const LAST_CREW_KEY = "kent-son-usta";
+const PUSH_DISMISS_KEY = "kent-bildirim-sonra";
 const EXCEL_TAG = "[Excel #";
 const WARN_DAYS = 7;
 const FILE_BUCKET = "job-files";
@@ -89,12 +90,17 @@ const state = {
   pendingPhotos: [],
   channel: null,
   reloadTimer: null,
+  swReg: null,
+  pushSub: null,
+  pushState: "unsupported",
+  pendingOpen: null,
 };
 
 const el = Object.fromEntries([
   "authGate", "loginForm", "loginUsername", "loginPassword", "loginError", "loginButton",
   "app", "listView", "detailView", "staffName", "stagesButton", "logoutButton",
-  "sideNav", "navClose", "navSettings", "navStaff", "homeView", "homeMenu", "homeDate", "homeNewJob", "homeTiles", "homeToday", "homeFollow", "listMenu",
+  "sideNav", "navClose", "navSettings", "navStaff", "navPush", "navPushState", "homePushStrip",
+  "pushDialog", "pushStatus", "pushHint", "pushEnable", "pushTest", "pushDisable", "pushClose", "homeView", "homeMenu", "homeDate", "homeNewJob", "homeTiles", "homeToday", "homeFollow", "listMenu",
   "searchInput", "sortSelect", "stageChips", "districtChips", "syncStatus", "jobList", "emptyState", "newJobButton",
   "moneyButton", "moneyView", "moneyBack", "moneyShare", "moneySearch", "moneyMode", "moneyStatus", "moneyDistrict", "moneySummary", "moneyCount", "moneyList", "moneyEmpty",
   "summaryButton", "summaryView", "summaryBack", "summaryNow", "summaryStatus", "summaryTable", "summaryPipeline", "summaryHygiene",
@@ -290,7 +296,7 @@ function activeJob() {
 }
 
 function allSheets() {
-  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.planPicker, el.quotePicker, el.dateAsk, el.stagePicker, el.stagesDialog];
+  return [el.jobDialog, el.priceDialog, el.confirmDialog, el.planPicker, el.quotePicker, el.dateAsk, el.stagePicker, el.stagesDialog, el.pushDialog];
 }
 
 function anySheetOpen() {
@@ -1039,7 +1045,172 @@ async function navigate(target, filter) {
   else if (target === "money") openMoney();
   else if (target === "summary") openSummary();
   else if (target === "settings") { renderAdminLists(); openSheet(el.stagesDialog); }
+  else if (target === "push") openPushDialog();
   else if (target === "logout") db.auth.signOut();
+}
+
+// ---------------------------------------------------------------------------
+// Bildirimler (Web Push). iPhone'da yalnızca ana ekrana eklenmiş uygulamada çalışır (iOS 16.4+).
+// Akış: sw.js kaydı → izin (düğmeye basınca) → pushManager.subscribe → push_subscriptions tablosu.
+// Gönderimi Supabase Edge Function (push-reminders) yapar; bildirime dokununca ?job=…&tpl=… ile iş açılır.
+// ---------------------------------------------------------------------------
+function pushConfigured() { return Boolean(config.vapidPublicKey); }
+function pushSupported() { return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+function isIOS() { return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); }
+function isStandalone() { return navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches; }
+
+function vapidKeyBytes(b64url) {
+  const pad = "=".repeat((4 - (b64url.length % 4)) % 4);
+  const bin = atob((b64url + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    state.swReg = await navigator.serviceWorker.register("/sw.js", { scope: "/admin" });
+    return state.swReg;
+  } catch (error) {
+    console.warn("sw kaydı başarısız", error);
+    return null;
+  }
+}
+
+// Durum: unsupported | unconfigured | need-install | denied | off | on
+async function refreshPushState() {
+  if (!pushConfigured()) { state.pushState = "unconfigured"; renderPush(); return; }
+  if (!pushSupported()) { state.pushState = isIOS() && !isStandalone() ? "need-install" : "unsupported"; renderPush(); return; }
+  if (!state.swReg) await registerServiceWorker();
+  if (!state.swReg) { state.pushState = "unsupported"; renderPush(); return; }
+  if (Notification.permission === "denied") { state.pushState = "denied"; renderPush(); return; }
+  state.pushSub = await state.swReg.pushManager.getSubscription().catch(() => null);
+  state.pushState = state.pushSub ? "on" : "off";
+  renderPush();
+}
+
+// Mevcut aboneliği sunucuya yazar (giriş sonrası; last_seen_at tazelenir, cihaz değişmişse yeni satır).
+async function syncPushSubscription() {
+  if (!state.pushSub || !state.user) return;
+  const j = state.pushSub.toJSON();
+  await db.from("push_subscriptions").upsert({
+    user_id: state.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth,
+    user_agent: navigator.userAgent.slice(0, 200), last_seen_at: new Date().toISOString(),
+  }, { onConflict: "endpoint" });
+}
+
+function renderPush() {
+  const s = state.pushState;
+  const show = s !== "unconfigured" && s !== "unsupported";
+  el.navPush.hidden = !show;
+  el.navPushState.textContent = s === "on" ? "açık" : s === "need-install" || s === "off" || s === "denied" ? "kapalı" : "";
+  const dismissed = localStorage.getItem(PUSH_DISMISS_KEY) === "1";
+  el.homePushStrip.hidden = !(show && s !== "on" && !dismissed);
+
+  const texts = {
+    on: ["Bu cihazda bildirimler AÇIK", "on", "Hatırlatmalar bu telefona gelecek. Çalıştığını görmek için test gönderin."],
+    off: ["Bildirimler kapalı", "off", "Aşağıdaki düğmeye basınca telefon izin soracak; \"İzin ver\" deyin."],
+    denied: ["Bildirim izni reddedilmiş", "bad", isIOS() ? "iPhone Ayarlar › Bildirimler › Kent İş › Bildirimlere izin ver'i açın, sonra buraya dönün." : "Tarayıcı ayarlarından bu site için bildirim iznini açın, sonra tekrar deneyin."],
+    "need-install": ["Önce ana ekrana ekleyin", "off", "Safari'de alttaki Paylaş (kare+ok) simgesine basın › \"Ana Ekrana Ekle\". Sonra uygulamayı ana ekrandan açıp buraya gelin."],
+    unsupported: ["Bu tarayıcı bildirim desteklemiyor", "bad", "Güncel Safari (iOS 16.4+) veya Chrome kullanın."],
+    unconfigured: ["Bildirim servisi henüz kurulmadı", "bad", "Yönetici VAPID anahtarını girmeli."],
+  };
+  const [status, cls, hint] = texts[s] || texts.unsupported;
+  el.pushStatus.textContent = status;
+  el.pushStatus.className = "push-status " + cls;
+  el.pushHint.textContent = hint;
+  el.pushEnable.hidden = s !== "off";
+  el.pushTest.hidden = s !== "on";
+  el.pushDisable.hidden = s !== "on";
+}
+
+async function openPushDialog() {
+  await refreshPushState();
+  openSheet(el.pushDialog);
+}
+
+async function enablePush() {
+  el.pushEnable.disabled = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { await refreshPushState(); toast(perm === "denied" ? "İzin verilmedi" : "İzin istendi, tekrar deneyin", true); return; }
+    state.pushSub = await state.swReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKeyBytes(config.vapidPublicKey) });
+    await syncPushSubscription();
+    localStorage.removeItem(PUSH_DISMISS_KEY);
+    state.pushState = "on";
+    renderPush();
+    toast("Bildirimler açıldı ✓");
+  } catch (error) {
+    toast("Açılamadı: " + friendlyError(error), true);
+    await refreshPushState();
+  } finally {
+    el.pushEnable.disabled = false;
+  }
+}
+
+async function disablePush() {
+  if (!state.pushSub) return;
+  const endpoint = state.pushSub.endpoint;
+  try {
+    await state.pushSub.unsubscribe();
+    await db.from("push_subscriptions").delete().eq("endpoint", endpoint);
+    state.pushSub = null;
+    state.pushState = "off";
+    renderPush();
+    toast("Bu cihazda bildirimler kapatıldı");
+  } catch (error) {
+    toast(friendlyError(error), true);
+  }
+}
+
+async function sendTestPush() {
+  el.pushTest.disabled = true;
+  el.pushTest.textContent = "Gönderiliyor…";
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch(`${config.url}/functions/v1/push-reminders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": config.publishableKey, "Authorization": `Bearer ${session.access_token}` },
+      body: JSON.stringify({ test: true, endpoint: state.pushSub?.endpoint || "" }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.ok) throw new Error(out.error || (out.errors || []).join(" ") || `HTTP ${res.status}`);
+    toast("Test gönderildi, birazdan telefona düşer");
+  } catch (error) {
+    toast("Test başarısız: " + friendlyError(error), true);
+  } finally {
+    el.pushTest.disabled = false;
+    el.pushTest.textContent = "Test bildirimi gönder";
+  }
+}
+
+// Bildirimden gelen açılış: URL'deki ?job=…&tpl=… veya service worker mesajı.
+function takeDeepLink() {
+  const p = new URLSearchParams(location.search);
+  if (!p.get("job")) return null;
+  const target = { job: p.get("job"), tpl: p.get("tpl") || null };
+  history.replaceState(null, "", location.pathname);
+  return target;
+}
+
+async function openFromPush(target) {
+  if (!target?.job) return;
+  if (!state.jobs.length) { state.pendingOpen = target; return; }
+  if (!state.jobs.some((j) => j.id === target.job)) { toast("İş bulunamadı (silinmiş olabilir)", true); return; }
+  await closeSheets();
+  await openDetail(target.job);
+  if (target.tpl) highlightTemplate(target.tpl);
+  if ("clearAppBadge" in navigator) navigator.clearAppBadge().catch(() => {});
+}
+
+function highlightTemplate(tplKey) {
+  el.secMsg.open = true;
+  const btn = el.messageButtons.querySelector(`[data-tpl="${tplKey}"]`);
+  if (!btn) return;
+  setTimeout(() => {
+    btn.scrollIntoView({ behavior: "smooth", block: "center" });
+    btn.classList.add("pulse");
+    setTimeout(() => btn.classList.remove("pulse"), 3500);
+  }, 150);
 }
 
 function homeRow(j, kind) {
@@ -1199,7 +1370,7 @@ function renderDetail() {
       return `<button type="button" class="btn btn-outline msg-btn needs" data-need="${t.needs}" data-tpl="${t.key}">
       <span>${escapeHtml(t.title)}<small>${t.needs === "appointment" ? "Randevu girilmemiş, önce tarih sorulur" : "İş günü girilmemiş, önce tarih sorulur"}</small></span></button>`;
     }
-    return `<a class="btn btn-outline msg-btn" ${href ? `href="${href}" target="_blank" rel="noopener"` : 'aria-disabled="true" href="#"'}>
+    return `<a class="btn btn-outline msg-btn" data-tpl="${t.key}" ${href ? `href="${href}" target="_blank" rel="noopener"` : 'aria-disabled="true" href="#"'}>
       <span>${escapeHtml(t.title)}<small>${escapeHtml(t.hint)}</small></span></a>`;
   }).join("");
   if (!wa) el.messageButtons.innerHTML = `<p class="hint">Telefon numarası 10 haneli olmalı (örn. 0532 111 22 33).</p>` + el.messageButtons.innerHTML;
@@ -2010,6 +2181,8 @@ async function applySession(session) {
   el.app.hidden = false;
   el.loginPassword.value = "";
   showView("home");
+  const deepLink = takeDeepLink();
+  refreshPushState().then(syncPushSubscription).catch(() => {});
   try {
     await loadStages();
     await loadJobs();
@@ -2018,6 +2191,9 @@ async function applySession(session) {
   } catch (error) {
     toast(friendlyError(error), true);
   }
+  const target = deepLink || state.pendingOpen;
+  state.pendingOpen = null;
+  if (target) openFromPush(target);
 }
 
 // ---------------------------------------------------------------------------
@@ -2309,8 +2485,25 @@ el.stagesList.addEventListener("change", handleAdminRename);
 el.checkItemsList.addEventListener("click", handleAdminClick);
 el.checkItemsList.addEventListener("change", handleAdminRename);
 
+el.homePushStrip.addEventListener("click", openPushDialog);
+el.pushEnable.addEventListener("click", enablePush);
+el.pushTest.addEventListener("click", sendTestPush);
+el.pushDisable.addEventListener("click", disablePush);
+el.pushClose.addEventListener("click", () => {
+  if (state.pushState !== "on") { localStorage.setItem(PUSH_DISMISS_KEY, "1"); renderPush(); }
+  closeSheets();
+});
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "open-job") openFromPush({ job: event.data.job, tpl: event.data.tpl });
+  });
+}
+
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && state.user) scheduleReload();
+  if (document.visibilityState === "visible" && state.user) {
+    scheduleReload();
+    if ("clearAppBadge" in navigator) navigator.clearAppBadge().catch(() => {});
+  }
 });
 
 db.auth.onAuthStateChange((_event, session) => setTimeout(() => applySession(session), 0));

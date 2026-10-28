@@ -1,0 +1,5 @@
+project_id = "bluvpmkvvioezdwfivbr"
+
+# push-reminders zamanlayıcıdan (pg_cron) x-cron-secret ile çağrılır; JWT doğrulaması fonksiyonun içinde yapılır.
+[functions.push-reminders]
+verify_jwt = false

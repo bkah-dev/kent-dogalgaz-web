@@ -56,6 +56,7 @@
         <button type="button" class="nav-item" data-nav="calendar"><i>📅</i><span>Takvim</span></button>
         <button type="button" class="nav-item" data-nav="money"><i>₺</i><span>Tahsilatlar</span><b class="nav-count" data-count="money"></b></button>
         <button type="button" class="nav-item" data-nav="summary"><i>📊</i><span>Raporlar</span></button>
+        <button type="button" class="nav-item" data-nav="push" id="navPush" hidden><i>🔔</i><span>Bildirimler</span><b id="navPushState" class="nav-count"></b></button>
         <button type="button" class="nav-item" data-nav="settings" id="navSettings" hidden><i>⚙</i><span>Ayarlar</span></button>
       </div>
       <div class="nav-foot">
@@ -78,6 +79,11 @@
       </header>
       <div class="detail-body">
         <div id="homeTiles" class="home-tiles"></div>
+        <button id="homePushStrip" class="push-strip" type="button" hidden>
+          <span class="ps-icon">🔔</span>
+          <span class="ps-text"><strong>Bildirimleri açın</strong><small>Yarınki iş günleri, Aksa randevuları ve ödeme sözleri telefona bildirim olarak gelsin.</small></span>
+          <span class="ps-arrow">›</span>
+        </button>
         <div class="section-card">
           <h3 class="card-title">Bugün</h3>
           <div id="homeToday" class="cal-day-list"></div>
@@ -528,6 +534,24 @@
     <div class="sheet-actions">
       <button type="button" id="confirmCancel" class="btn btn-outline">Vazgeç</button>
       <button type="button" id="confirmOk" class="btn btn-danger">Sil</button>
+    </div>
+  </div>
+
+  <!-- Bildirim ayarı -->
+  <div id="pushDialog" class="sheet" hidden>
+    <h2>🔔 Bildirimler</h2>
+    <p id="pushStatus" class="push-status"></p>
+    <p id="pushHint" class="hint"></p>
+    <ul class="hint push-list">
+      <li>Her akşam 19:00: <b>yarının</b> iş günleri, Aksa randevuları, ödeme sözleri.</li>
+      <li>Her sabah 08:00: <b>bugünün</b> aynı listesi.</li>
+      <li>Bildirime dokununca iş açılır; hazır WhatsApp mesajı tek dokunuşla gönderilir.</li>
+    </ul>
+    <div class="sheet-actions push-actions">
+      <button type="button" id="pushEnable" class="btn btn-primary">Bildirimleri aç</button>
+      <button type="button" id="pushTest" class="btn btn-outline" hidden>Test bildirimi gönder</button>
+      <button type="button" id="pushDisable" class="btn btn-danger-ghost" hidden>Bu cihazda kapat</button>
+      <button type="button" id="pushClose" class="btn btn-outline">Kapat</button>
     </div>
   </div>
 
